@@ -32,5 +32,7 @@ for runde in range(runden):
     wettkampf.start()
     wettkampf.warte_auf_ende()
     print(util.wettkampf_uebersicht(wettkampf))
+    print("Speichere Bild für Runde {}".format(runde))
+    util.speichere_arena_bild(runde, wettkampf)
 
 

@@ -182,6 +182,14 @@ class Arena:
     def definition(self):
         return self._definition
 
+    @property
+    def breite(self) -> int:
+        return self.definition.breite
+
+    @property
+    def hoehe(self) -> int:
+        return self.definition.hoehe
+
     def gib_zustand(self, x: int, y: int, teilnehmer: Teilnehmer) -> FeldZustand:
         if not self.ist_in_feld(x, y):
             return FeldZustand.Wand
