@@ -1,11 +1,9 @@
 import logging
+import random
 
-from typing import Tuple, Iterable
+from typing import Tuple, Sequence, Type
 from framework.wettkampf import Wettkampf
 from framework.algorithm import Algorithmus
-from einfache_algorithmen import Zufall, Liner
-
-_importierte_algorithmen = {}
 
 
 def lese_zahl(prompt: str, default: int = None) -> int:
@@ -19,41 +17,40 @@ def lese_zahl(prompt: str, default: int = None) -> int:
             return lese_zahl(prompt)
 
 
-def importiere_algorithmen(algorithmen: Iterable[str], fallback: bool):
-    for algorithmus in algorithmen:
-        importiere_algorithmus(algorithmus, fallback)
-
-
-def importiere_algorithmus(algorithmus: str, fallback: bool):
-    modul_name, klasse_name = parse_algorithmus_pfad(algorithmus)
+def lade_algorithmus_klasse(algorithmus: str, fallback_algorithmen: Sequence[Type[Algorithmus]]) -> Type[Algorithmus]:
+    klasse = None
     error = None
+
     try:
-        modul = __import__(modul_name, globals(), locals())
-        klasse = getattr(modul, klasse_name)
-        _importierte_algorithmen[algorithmus] = klasse
-    except (ImportError, ValueError) as e:
-        logger().error("Das Modul '{}' konnte nicht gefunden werden".format(modul_name))
-        error = e
-    except AttributeError as e:
-        logger().error("Die Klasse '{}' konnte nicht im Modul '{}' gefunden werden".format(klasse_name, modul_name))
+        modul_name, klasse_name = parse_algorithmus_pfad(algorithmus)
+        try:
+            modul = __import__(modul_name, globals(), locals())
+            klasse = getattr(modul, klasse_name)
+        except (ImportError, ValueError) as e:
+            logger().error("Das Modul '{}' konnte nicht gefunden werden".format(modul_name))
+            error = e
+        except AttributeError as e:
+            logger().error("Die Klasse '{}' konnte nicht im Modul '{}' gefunden werden".format(klasse_name, modul_name))
+            error = e
+    except ValueError as e:
+        logger().error(str(e))
         error = e
 
     if error:
-        if not fallback:
+        if not fallback_algorithmen:
             raise error
         else:
-            _importierte_algorithmen[algorithmus] = _algorithmus_fallback_factory
-
-
-def erzeuge_algorithmus(algo_pfad: str) -> Algorithmus:
-    if algo_pfad not in _importierte_algorithmen:
-        importiere_algorithmus(algo_pfad, fallback=False)
-    return _importierte_algorithmen[algo_pfad]()
+            klasse = random.choice(fallback_algorithmen)
+    return klasse
 
 
 def parse_algorithmus_pfad(pfad: str) -> Tuple[str, str]:
+    if not pfad:
+        raise ValueError("Es wurde kein Pfad übergeben")
     trenn_index = pfad.rfind(".")
-    return pfad[:trenn_index], pfad[trenn_index + 1:]
+    if trenn_index < 0:
+        raise ValueError("Der Pfad '{}' konnte nicht geparsed werden".format(pfad))
+    return pfad[:trenn_index] if trenn_index > 0 else ".", pfad[trenn_index + 1:]
 
 
 def wettkampf_uebersicht(wettkampf: Wettkampf) -> str:
@@ -76,20 +73,3 @@ def wettkampf_uebersicht(wettkampf: Wettkampf) -> str:
 
 def logger() -> logging.Logger:
     return logging.getLogger("Util")
-
-
-class AlgorithmusFallbackFactory:
-
-    def __init__(self):
-        self._fallback_algorithmen = [Zufall, Liner]
-        self._index = 0
-
-    def __call__(self, *args, **kwargs):
-        algorithmus = self._fallback_algorithmen[self._index]()
-        self._index += 1
-        if self._index >= len(self._fallback_algorithmen):
-            self._index = 0
-        return algorithmus
-
-
-_algorithmus_fallback_factory = AlgorithmusFallbackFactory()
