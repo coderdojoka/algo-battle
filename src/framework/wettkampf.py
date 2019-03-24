@@ -27,6 +27,11 @@ class Wettkampf:
         self._zug_berechtigung = RLock()
 
     def start(self):
+        if self._aktueller_zug != 0:
+            raise ValueError(
+                "Der Wettkampf wurde schon gestartet" if self.laeuft_noch else "Der Wettkampf ist beendet"
+            )
+
         with self.zug_berechtigung:
             gemischte_teilnehmer = list(self._teilnehmer)
             random.shuffle(gemischte_teilnehmer)
