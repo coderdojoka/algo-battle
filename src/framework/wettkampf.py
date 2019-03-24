@@ -57,6 +57,10 @@ class Wettkampf:
     def teilnehmer(self) -> List["Teilnehmer"]:
         return self._teilnehmer
 
+    @property
+    def arena_snapshot(self) -> np.ndarray:
+        return self._arena.snapshot
+
     def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._zuege_pro_teilnehmer[teilnehmer]
 
@@ -189,6 +193,10 @@ class Arena:
     @property
     def hoehe(self) -> int:
         return self.definition.hoehe
+
+    @property
+    def snapshot(self) -> np.ndarray:
+        return self._felder.copy()
 
     def gib_zustand(self, x: int, y: int, teilnehmer: Teilnehmer) -> FeldZustand:
         if not self.ist_in_feld(x, y):

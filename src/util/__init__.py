@@ -44,11 +44,11 @@ def speichere_arena_bild(runde: int, wettkampf: Wettkampf, feld_groesse=9, ordne
         logger().warning("Bilder können nicht gespeichert werden. Installiere das Modul 'pillow' zuerst.")
         return
 
-    arena = wettkampf._arena
+    arena = wettkampf.arena_definition
     img = Image.new("RGB", (arena.breite * feld_groesse, arena.hoehe * feld_groesse))
     draw = ImageDraw.Draw(img)
 
-    arena_felder = arena._felder
+    arena_felder = wettkampf.arena_snapshot
     it = np.nditer(arena_felder, flags=["multi_index"])
     while not it.finished:
         wert = it[0]
