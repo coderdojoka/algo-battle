@@ -1,6 +1,7 @@
 import logging
 import random
 
+from importlib import import_module
 from typing import Sequence, Type
 from framework.algorithm import Algorithmus
 
@@ -59,8 +60,7 @@ def lese_algorithmus(text: str, fallback_algorithmen: Sequence[Type[Algorithmus]
     eingabe = input("{}{}: ".format(text, default_text)).strip()
     error = None
     try:
-        algorithmus_klasse = lade_algorithmus_klasse(eingabe, fallback_algorithmen)
-        print("Der Algorithmus {} wurde ausgewählt".format(algorithmus_klasse.__name__))
+        algorithmus_klasse = lade_algorithmus_klasse(eingabe)
     except ValueError as e:
         algorithmus_klasse = random.choice(fallback_algorithmen) if fallback_algorithmen else None
         error = e
@@ -73,12 +73,10 @@ def lese_algorithmus(text: str, fallback_algorithmen: Sequence[Type[Algorithmus]
         return lese_algorithmus(text, fallback_algorithmen)
 
 
-def lade_algorithmus_klasse(algorithmus: str, fallback_algorithmen: Sequence[Type[Algorithmus]]) -> Type[Algorithmus]:
-    klasse = None
-
+def lade_algorithmus_klasse(algorithmus: str) -> Type[Algorithmus]:
     modul_name, klasse_name = parse_algorithmus_pfad(algorithmus)
     try:
-        modul = __import__(modul_name, globals(), locals())
+        modul = import_module(modul_name)
         return getattr(modul, klasse_name)
     except (ImportError, ValueError) as e:
         raise ValueError("Das Modul '{}' konnte nicht gefunden werden".format(modul_name)) from e
