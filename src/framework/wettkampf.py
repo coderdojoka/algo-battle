@@ -173,6 +173,7 @@ class Teilnehmer:
 
     def start(self):
         self._thread = Thread(name=self.name, target=self._run, daemon=True)
+        self._algorithmus.arena = self._wettkampf.arena_definition
         self._algorithmus.start()
         self._thread.start()
 

@@ -32,6 +32,12 @@ class Algorithmus(ABC):
     def arena(self) -> ArenaDefinition:
         return self._arena
 
+    @arena.setter
+    def arena(self, arena: ArenaDefinition):
+        if self._arena:
+            raise ValueError("Die Arena ist schon gesetzt")
+        self._arena = arena
+
     def abstand(self, richtung: Richtung):
         if richtung is Richtung.Oben:
             return self.y

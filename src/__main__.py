@@ -28,7 +28,7 @@ def main():
 
     statistiken = util.EventStatistiken()
     for runde in range(anzahl_runden):
-        wettkampf = Wettkampf(arena_definition.punkte_maximum, arena_definition, erzeuge_algorithmen(arena_definition, algorithmen))
+        wettkampf = Wettkampf(arena_definition.punkte_maximum, arena_definition, [algorithmus() for algorithmus in algorithmen])
 
         print("\nRunde {}".format(runde + 1))
         wettkampf.start()
@@ -44,13 +44,6 @@ def main():
     print("\n")
     print("Speicher Overlay Bild für alle Runden")
     util.speichere_overlay_bild(anzahl_runden)
-
-
-def erzeuge_algorithmen(arena: ArenaDefinition, algorithmen: Iterable[Type[Algorithmus]]) -> Iterable[Algorithmus]:
-    instanzen = [algorithmus() for algorithmus in algorithmen]
-    for instanz in instanzen:
-        setattr(instanz, "_arena", arena)
-    return instanzen
 
 
 if __name__ == "__main__":
