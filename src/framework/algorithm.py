@@ -1,5 +1,11 @@
+import logging
+
 from abc import ABC, abstractmethod
+from threading import local
 from framework.domain import Richtung, ArenaDefinition, FeldZustand
+
+
+_threadlocal = local()
 
 
 class Algorithmus(ABC):
@@ -26,12 +32,6 @@ class Algorithmus(ABC):
     def arena(self) -> ArenaDefinition:
         return self._arena
 
-    @arena.setter
-    def arena(self, arena: ArenaDefinition):
-        if self._arena:
-            raise ValueError("Die Arena ist schon gesetzt")
-        self._arena = arena
-
     def abstand(self, richtung: Richtung):
         if richtung is Richtung.Oben:
             return self.y
@@ -54,3 +54,6 @@ class Algorithmus(ABC):
     @abstractmethod
     def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
         pass
+
+    def _logger(self) -> logging.Logger:
+        return logging.getLogger(self.name)

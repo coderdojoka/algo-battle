@@ -80,6 +80,19 @@ class Wettkampf:
     def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._zuege_pro_teilnehmer[teilnehmer]
 
+    def berechne_punkte_neu(self):
+        felder = self.arena_snapshot
+        felder_pro_wert = {t.nummer: 0 for t in self.teilnehmer}
+        for feld in np.nditer(felder):
+            wert = int(feld)
+            if wert >= 0:
+                felder_pro_wert[wert] += 1
+
+        for teilnehmer in self.teilnehmer:
+            nummer = teilnehmer.nummer
+            punkte = felder_pro_wert.get(nummer, 0)
+            self._punkte_pro_teilnehmer[teilnehmer] = punkte
+
     def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._punkte_pro_teilnehmer[teilnehmer]
 
@@ -107,10 +120,10 @@ class Wettkampf:
                 teilnehmer.y = y_neu
                 if zustand is FeldZustand.Frei:
                     self._arena.setze_feld(teilnehmer)
-                    self._punkte_pro_teilnehmer[teilnehmer] = self.punkte_von(teilnehmer) + 1
+                    self._punkte_pro_teilnehmer[teilnehmer] += 1
 
             self._aktueller_zug += 1
-            self._zuege_pro_teilnehmer[teilnehmer] = self.zuege_von(teilnehmer) + 1
+            self._zuege_pro_teilnehmer[teilnehmer] += 1
 
             return zustand
 
@@ -160,7 +173,6 @@ class Teilnehmer:
 
     def start(self):
         self._thread = Thread(name=self.name, target=self._run, daemon=True)
-        self._algorithmus.arena = self._wettkampf.arena_definition
         self._algorithmus.start()
         self._thread.start()
 
