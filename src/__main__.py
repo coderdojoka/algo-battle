@@ -4,9 +4,7 @@ import yaml
 import util
 import algorithmen.einfach as einfache_algorithmen
 
-from typing import Iterable, Type
 from framework.wettkampf import Wettkampf, ArenaDefinition
-from framework.algorithm import Algorithmus
 
 with open("config/logging_config.yml") as f:
     logging.config.dictConfig(yaml.load(f, Loader=yaml.FullLoader))
