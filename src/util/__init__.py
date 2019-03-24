@@ -1,8 +1,9 @@
 import os
 import logging
 import numpy as np
+import pandas as pd
 
-from framework.wettkampf import Wettkampf
+from framework.wettkampf import Wettkampf, Gleichstand
 
 # Imports zur Bereitstellung innerer Module
 import util.input
@@ -14,22 +15,77 @@ except ImportError:
     bilder_support = False
 
 
-def wettkampf_uebersicht(wettkampf: Wettkampf) -> str:
+def wettkampf_ergebnis(wettkampf: Wettkampf) -> str:
     zuege_uebersicht = "Züge gesamt: {} | {}".format(
         wettkampf.aktueller_zug,
-        " | ".join("[{}] {}: {}".format(t.nummer + 1, t.name, wettkampf.zuege_von(t)) for t in wettkampf.teilnehmer)
+        " | ".join("{}: {}".format(t, wettkampf.zuege_von(t)) for t in wettkampf.teilnehmer)
     )
+
     punkte_uebersicht = "Punkte: {}".format(
-        " | ".join("[{}] {}: {}".format(t.nummer + 1, t.name, wettkampf.punkte_von(t)) for t in wettkampf.teilnehmer)
+        " | ".join("{}: {}".format(t, wettkampf.punkte_von(t)) for t in wettkampf.teilnehmer)
     )
-    punkte_pro_teilnehmer = wettkampf._punkte_pro_teilnehmer
-    punkte_liste = list(punkte_pro_teilnehmer.values())
-    if all(p == punkte_liste[0] for p in punkte_liste):
+
+    sieger = wettkampf.sieger
+    if sieger is Gleichstand:
         ergebnis_nachricht = "Gleichstand! Es gibt keinen Gewinner."
     else:
-        gewinner = max(punkte_pro_teilnehmer.keys(), key=lambda t: punkte_pro_teilnehmer[t])
-        ergebnis_nachricht = "Teilnehmer {} {} gewinnt!".format(gewinner.nummer + 1, gewinner.name)
+        ergebnis_nachricht = "Teilnehmer {} gewinnt!".format(sieger)
     return "\n".join([zuege_uebersicht, punkte_uebersicht, ergebnis_nachricht])
+
+
+class EventStatistiken:
+
+    def __init__(self):
+        self._daten = pd.DataFrame()
+
+    @property
+    def daten(self) -> pd.DataFrame:
+        return self._daten
+
+    def speicher_runde(self, runde: int, wettkampf: Wettkampf):
+        sieger = wettkampf.sieger
+        rohdaten = {}
+        for teilnehmer in wettkampf.teilnehmer:
+            nummer = teilnehmer.nummer + 1
+            name = teilnehmer.name
+            rohdaten[(nummer, name, "Züge")] = wettkampf.zuege_von(teilnehmer)
+            rohdaten[(nummer, name, "Punkte")] = wettkampf.punkte_von(teilnehmer)
+            rohdaten[(nummer, name, "Siege")] = 1 if teilnehmer is sieger else 0
+
+        runden_daten = pd.DataFrame(rohdaten, index=[runde])
+        runden_daten.index.name = "Runde"
+        runden_daten.columns.names = ["Nummer", "Name", "Statistik"]
+
+        self._daten = self._daten.append(runden_daten)
+
+    @property
+    def zusammenfassung(self) -> str:
+        siege = self._daten.xs("Siege", axis="columns", level=2, drop_level=True).sum()
+        max_siege = siege.max()
+        gewinner = siege[siege == max_siege].index
+        if len(siege) == len(gewinner):
+            gewinner_nachricht = "Gleichstand! Alle Teilnehmer haben {} Runde{} gewonnen.".format(
+                max_siege, "n" if max_siege > 1 else ""
+            )
+        else:
+            gewinner_nachricht = "Teilnehmer {} gewinn{} mit {} Sieg{}!".format(
+                ", ".join("[{}] {}".format(t[0], t[1]) for t in gewinner),
+                "en" if len(gewinner) > 1 else "t", max_siege, "en" if max_siege > 1 else ""
+            )
+
+        zuege_durchschnitt = self._daten.xs("Züge", axis="columns", level=2, drop_level=True).mean()
+        zuege_nachricht = "Durchschnittliche Züge: {}".format(" | ".join(
+            "[{}] {}: {:.2f}".format(nummer, name, zuege) for (nummer, name), zuege in zuege_durchschnitt.iteritems()
+        ))
+
+        punkte_durchschnitt = self._daten.xs("Punkte", axis="columns", level=2, drop_level=True).mean()
+        punkte_nachricht = "Durchschnittliche Punkte: {}".format(" | ".join(
+            "[{}] {}: {:.2f}".format(nummer, name, punkte) for (nummer, name), punkte in punkte_durchschnitt.iteritems()
+        ))
+
+        return "Zusammenfassung: {}\n{}\n{}".format(
+            gewinner_nachricht, zuege_nachricht, punkte_nachricht
+        )
 
 
 hintergrund_farbe = (0, 0, 0)

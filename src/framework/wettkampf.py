@@ -2,7 +2,7 @@ import time
 import numpy as np
 import random
 
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 from threading import Thread, RLock
 from framework.domain import ArenaDefinition, FeldZustand
 from framework.algorithm import Algorithmus
@@ -66,6 +66,17 @@ class Wettkampf:
     def arena_snapshot(self) -> np.ndarray:
         return self._arena.snapshot
 
+    @property
+    def sieger(self) -> Optional["Teilnehmer"]:
+        if self.laeuft_noch:
+            return None
+
+        punkte_liste = list(self._punkte_pro_teilnehmer.values())
+        if all(p == punkte_liste[0] for p in punkte_liste):
+            return Gleichstand
+        else:
+            return max(self._punkte_pro_teilnehmer.keys(), key=lambda t: self._punkte_pro_teilnehmer[t])
+
     def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._zuege_pro_teilnehmer[teilnehmer]
 
@@ -113,8 +124,7 @@ class Teilnehmer:
         self._algorithmus = algorithmus
         self._wettkampf = wettkampf
         self._zug_pause = zug_pause
-
-        self._thread = Thread(name=algorithmus.name, target=self._run, daemon=True)
+        self._thread = None
 
     @property
     def nummer(self):
@@ -149,6 +159,7 @@ class Teilnehmer:
         self._algorithmus.y = value
 
     def start(self):
+        self._thread = Thread(name=self.name, target=self._run, daemon=True)
         self._algorithmus.arena = self._wettkampf.arena_definition
         self._algorithmus.start()
         self._thread.start()
@@ -170,7 +181,7 @@ class Teilnehmer:
 
             time.sleep(self._zug_pause)
 
-    def __str__(self):
+    def __repr__(self):
         return "{klasse}[nummer={nummer}, name={name}, position=({x},{y}), richtung={richtung}]".format(
             klasse=self.__class__.__name__,
             nummer=self.nummer,
@@ -179,6 +190,41 @@ class Teilnehmer:
             y=self.y,
             richtung=self.richtung
         )
+
+    def __str__(self):
+        return "[{}] {}".format(self.nummer + 1, self.name)
+
+
+class GleichstandDummy(Teilnehmer):
+
+    # noinspection PyTypeChecker
+    def __init__(self):
+        super().__init__(-1, None, None, -1)
+
+    @property
+    def name(self):
+        return "Gleichstand"
+
+    @property
+    def richtung(self):
+        return None
+
+    @property
+    def x(self) -> int:
+        return -1
+
+    @property
+    def y(self) -> int:
+        return -1
+
+    def start(self):
+        pass
+
+    def _run(self):
+        pass
+
+
+Gleichstand = GleichstandDummy()
 
 
 class Arena:
