@@ -1,17 +1,12 @@
-import logging.config
 import inspect
-import yaml
 import util
 import algorithmen.einfach as einfache_algorithmen
 
 from framework.wettkampf import Wettkampf, ArenaDefinition
 
-with open("config/logging_config.yml") as f:
-    logging.config.dictConfig(yaml.load(f, Loader=yaml.FullLoader))
-
 
 # TODO Default values and fallback algorithm module in config
-def main():
+def run_cli():
     print("Algo-Battle")
     anzahl_runden = util.input.lese_zahl("Anzahl der Runden", 9)
     anzahl_teilnehmer = util.input.lese_zahl("Anzahl der Teilnehmer", 2)
@@ -42,7 +37,3 @@ def main():
     print("\n")
     print("Speicher Overlay Bild für alle Runden")
     util.speichere_overlay_bild(anzahl_runden)
-
-
-if __name__ == "__main__":
-    main()

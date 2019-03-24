@@ -1,11 +1,7 @@
 import logging
 
 from abc import ABC, abstractmethod
-from threading import local
 from framework.domain import Richtung, ArenaDefinition, FeldZustand
-
-
-_threadlocal = local()
 
 
 class Algorithmus(ABC):
