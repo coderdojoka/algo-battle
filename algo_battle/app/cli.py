@@ -34,6 +34,6 @@ def run_cli():
 
     print("\n")
     print(statistiken.zusammenfassung)
-    print("\n")
-    print("Speicher Overlay Bild für alle Runden")
+    
+    print("\nSpeichere Overlay Bild für alle Runden")
     util.speichere_overlay_bild(anzahl_runden)
