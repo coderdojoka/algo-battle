@@ -123,7 +123,23 @@ def speichere_arena_bild(runde: int, wettkampf: Wettkampf, feld_groesse=9, ordne
         it.iternext()
 
     os.makedirs(ordner, exist_ok=True)
-    img.save(os.path.join(ordner, "Runde_{}.png".format(runde + 1)))
+    img.convert(mode="RGBA").save(os.path.join(ordner, "Runde_{}.png".format(runde + 1)))
+
+
+def speichere_overlay_bild(anzahl_runden: int, ordner="Bilder"):
+    if not bilder_support:
+        logger().warning("Bilder können nicht gespeichert werden. Installiere das Modul 'pillow' zuerst.")
+        return
+
+    img = None
+    for runde in range(1, anzahl_runden + 1):
+        next_img = Image.open(os.path.join(ordner, "Runde_{}.png".format(runde)))
+        if not img:
+            img = next_img
+        else:
+            img = Image.blend(img, next_img, 0.5)
+
+    img.save(os.path.join(ordner, "Overlay_Runden_1-{}.png".format(anzahl_runden)))
 
 
 def logger() -> logging.Logger:
