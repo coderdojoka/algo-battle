@@ -3,7 +3,7 @@ import yaml
 import sys
 
 from app.cli import run_cli
-from app.tkinter_gui import start_gui as start_tkinter
+from app.pyside2_gui import start_gui
 
 # TODO Only algorithm loggers should log the thread name
 # TODO Check if file exists
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     if mode == "CLI":
         run_cli()
     elif mode == "GUI":
-        start_tkinter()
+        start_gui()
     else:
         logger.critical("Unbekannter Modus '{}'".format(mode))
         sys.exit(1)
