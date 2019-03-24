@@ -1,64 +1,17 @@
 import os
 import logging
-import random
 import numpy as np
 
-from typing import Tuple, Sequence, Type
 from framework.wettkampf import Wettkampf
-from framework.algorithm import Algorithmus
+
+# Imports zur Bereitstellung innerer Module
+import util.input
 
 try:
     from PIL import Image, ImageDraw
     bilder_support = True
 except ImportError:
     bilder_support = False
-
-
-def lese_zahl(prompt: str, default: int = None) -> int:
-    eingabe = input(prompt)
-    try:
-        return int(eingabe)
-    except ValueError:
-        if default:
-            return default
-        else:
-            return lese_zahl(prompt)
-
-
-def lade_algorithmus_klasse(algorithmus: str, fallback_algorithmen: Sequence[Type[Algorithmus]]) -> Type[Algorithmus]:
-    klasse = None
-    error = None
-
-    try:
-        modul_name, klasse_name = parse_algorithmus_pfad(algorithmus)
-        try:
-            modul = __import__(modul_name, globals(), locals())
-            klasse = getattr(modul, klasse_name)
-        except (ImportError, ValueError) as e:
-            logger().error("Das Modul '{}' konnte nicht gefunden werden".format(modul_name))
-            error = e
-        except AttributeError as e:
-            logger().error("Die Klasse '{}' konnte nicht im Modul '{}' gefunden werden".format(klasse_name, modul_name))
-            error = e
-    except ValueError as e:
-        logger().error(str(e))
-        error = e
-
-    if error:
-        if not fallback_algorithmen:
-            raise error
-        else:
-            klasse = random.choice(fallback_algorithmen)
-    return klasse
-
-
-def parse_algorithmus_pfad(pfad: str) -> Tuple[str, str]:
-    if not pfad:
-        raise ValueError("Es wurde kein Pfad übergeben")
-    trenn_index = pfad.rfind(".")
-    if trenn_index < 0:
-        raise ValueError("Der Pfad '{}' konnte nicht geparsed werden".format(pfad))
-    return pfad[:trenn_index] if trenn_index > 0 else ".", pfad[trenn_index + 1:]
 
 
 def wettkampf_uebersicht(wettkampf: Wettkampf) -> str:
@@ -82,7 +35,7 @@ def wettkampf_uebersicht(wettkampf: Wettkampf) -> str:
 hintergrund_farbe = (0, 0, 0)
 teilnehmer_farben = [
     (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255),
-    (128, 128, 128), (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (128, 0, 128), (0, 128, 128)
+    (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (0, 128, 128), (128, 0, 128), (128, 128, 128)
 ]
 
 
@@ -114,7 +67,7 @@ def speichere_arena_bild(runde: int, wettkampf: Wettkampf, feld_groesse=9, ordne
         it.iternext()
 
     os.makedirs(ordner, exist_ok=True)
-    img.save(os.path.join(ordner, "Runde_{}.png".format(runde)))
+    img.save(os.path.join(ordner, "Runde_{}.png".format(runde + 1)))
 
 
 def logger() -> logging.Logger:

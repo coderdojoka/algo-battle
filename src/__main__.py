@@ -10,17 +10,16 @@ with open("config/logging_config.yml") as f:
 
 
 print("Algo-Battle")
-runden = util.lese_zahl("Anzahl der Runden (9): ", 9)
-anzahl_teilnehmer = util.lese_zahl("Anzahl der Teilnehmer (2): ", 2)
+runden = util.input.lese_zahl("Anzahl der Runden", 9)
+anzahl_teilnehmer = util.input.lese_zahl("Anzahl der Teilnehmer", 2)
 
-algorithmen = []
-for i in range(anzahl_teilnehmer):
-    eingabe = input("Algorithmus {} (zufälliger einfacher Algorithmus): ".format(i + 1)).strip()
-    algorithmus_klasse = util.lade_algorithmus_klasse(eingabe, fallback_algorithmen=[Zufall, Liner])
-    algorithmen.append(algorithmus_klasse)
-    print("Der Algorithmus {} wurde ausgewählt".format(algorithmus_klasse.__name__))
+algorithmen = [
+    util.input.lese_algorithmus("Algorithmus {}".format(i + 1), fallback_algorithmen=[Zufall, Liner])
+    for i in range(anzahl_teilnehmer)
+]
 
-arena_definition = ArenaDefinition(100, 100)
+arena_groesse = util.input.lese_arena_groesse("Arena Größe", (100, 100))
+arena_definition = ArenaDefinition(*arena_groesse)
 
 for runde in range(runden):
     wettkampf = Wettkampf(
@@ -32,7 +31,7 @@ for runde in range(runden):
     wettkampf.start()
     wettkampf.warte_auf_ende()
     print(util.wettkampf_uebersicht(wettkampf))
-    print("Speichere Bild für Runde {}".format(runde))
+    print("Speichere Bild für Runde {}".format(runde + 1))
     util.speichere_arena_bild(runde, wettkampf)
 
 

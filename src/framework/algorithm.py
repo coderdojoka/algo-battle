@@ -4,8 +4,11 @@ from framework.domain import Richtung, ArenaDefinition, FeldZustand
 
 class Algorithmus(ABC):
 
-    def __init__(self, name: str):
-        self._name = name
+    def __init__(self, name: str = None):
+        if name:
+            self._name = name
+        else:
+            self._name = self.__class__.__name__
         self._richtung = Richtung.zufall()
         self._arena = None
         self.x = -1

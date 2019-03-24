@@ -24,17 +24,6 @@ class Zufall(Algorithmus):
         return self.richtung
 
 
-class Faultier(Zufall):
-
-    def __init__(self):
-        super().__init__()
-        self._name = "Faultier"
-
-    def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
-        time.sleep(0.05)
-        return super()._gib_richtung(letzter_zustand, zug_nummer, aktuelle_punkte)
-
-
 class Liner(Algorithmus):
 
     def __init__(self):
@@ -64,3 +53,20 @@ class Liner(Algorithmus):
             richtung = Richtung.Rechts if self._linker_rand else Richtung.Links
             self._linker_rand = not self._linker_rand
         return richtung
+
+
+class Faultier(Zufall):
+
+    def __init__(self):
+        super().__init__()
+        self._name = "Faultier"
+
+    def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
+        time.sleep(0.05)
+        return super()._gib_richtung(letzter_zustand, zug_nummer, aktuelle_punkte)
+
+
+class Punkt(Algorithmus):
+
+    def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
+        return self.richtung.drehe_nach_rechts()

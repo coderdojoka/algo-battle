@@ -7,7 +7,7 @@ from threading import Thread, RLock
 from framework.domain import ArenaDefinition, FeldZustand
 from framework.algorithm import Algorithmus
 
-_zug_pause_default = 0.00000000001
+_zug_pause_default = 0.0002
 
 
 class Wettkampf:
