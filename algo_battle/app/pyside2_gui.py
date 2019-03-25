@@ -8,6 +8,11 @@ _font_size = 12
 _initial_width = 900
 _initial_height = 1000
 
+_min_teilnehmer_anzahl = 2
+_max_teilnehmer_anzahl = 10
+_min_arena_groesse = 75
+_max_arena_groesse = 300
+
 
 def start_gui():
     app = widgets.QApplication()
@@ -24,7 +29,6 @@ def start_gui():
     sys.exit(app.exec_())
 
 
-# TODO Change to MainWindow?
 class MainView(widgets.QMainWindow):
 
     def __init__(self):
@@ -56,11 +60,11 @@ class StartBattleView(widgets.QWidget):
 
     def __init__(self, status_bar: widgets.QStatusBar):
         super().__init__()
-        self._status_bar = status_bar  # TODO Use to display invalid inputs
+        self._status_bar = status_bar
 
         self._anzahl_teilnehmer = widgets.QLineEdit("2")
         self._anzahl_teilnehmer.setFixedWidth(100)
-        self._anzahl_teilnehmer.setValidator(gui.QIntValidator(2, 10))
+        self._anzahl_teilnehmer.setValidator(gui.QIntValidator(_min_teilnehmer_anzahl, _max_teilnehmer_anzahl))
         self._anzahl_teilnehmer.textChanged.connect(self._teilnehmer_anzahl_geaendert)
 
         self._algorithmen = []
@@ -69,14 +73,14 @@ class StartBattleView(widgets.QWidget):
 
         self._arena_breite = widgets.QLineEdit("100")
         self._arena_breite.setFixedWidth(50)
-        self._arena_breite.setValidator(gui.QIntValidator(75, 300))
+        self._arena_breite.setValidator(gui.QIntValidator(_min_arena_groesse, _max_arena_groesse))
         self._arena_breite.setAlignment(core.Qt.AlignRight)
-        self._arena_breite.textChanged.connect(self._update_start_knopf)
+        self._arena_breite.textChanged.connect(self._eingaben_geaendert)
 
         self._arena_hoehe = widgets.QLineEdit("100")
         self._arena_hoehe.setFixedWidth(50)
-        self._arena_hoehe.setValidator(gui.QIntValidator(75, 300))
-        self._arena_hoehe.textChanged.connect(self._update_start_knopf)
+        self._arena_hoehe.setValidator(gui.QIntValidator(_min_arena_groesse, _max_arena_groesse))
+        self._arena_hoehe.textChanged.connect(self._eingaben_geaendert)
 
         self._start_knopf = widgets.QPushButton("Start")
         self._start_knopf.setFixedWidth(200)
@@ -133,9 +137,24 @@ class StartBattleView(widgets.QWidget):
     def _algorithmen_valid(self):
         return all(feld.hasAcceptableInput() for feld in self._algorithmus_felder)
 
+    def _eingaben_geaendert(self):
+        self._start_knopf.setEnabled(self.is_valid)
+
+        teilnehmer_anzahl_nachricht = ""
+        if not self._anzahl_teilnehmer.hasAcceptableInput():
+            teilnehmer_anzahl_nachricht = "Die Anzahl der Teilnehmer muss zwischen {} und {} liegen.".format(
+                _min_teilnehmer_anzahl, _max_teilnehmer_anzahl
+            )
+        arena_groesse_nachricht = ""
+        if not self._arena_groesse_valid:
+            arena_groesse_nachricht = "Die Breite/Höhe der Arena muss zwischen {} und {} liegen.".format(
+                _min_arena_groesse, _max_arena_groesse
+            )
+        self._status_bar.showMessage("{}\n{}".format(teilnehmer_anzahl_nachricht, arena_groesse_nachricht))
+
     def _teilnehmer_anzahl_geaendert(self):
         if not self._anzahl_teilnehmer.hasAcceptableInput():
-            self._update_start_knopf()
+            self._eingaben_geaendert()
             return
 
         while len(self._algorithmen) < self.anzahl_teilnehmer:
@@ -161,7 +180,7 @@ class StartBattleView(widgets.QWidget):
             text = self._algorithmen[index] if self._algorithmen[index] else "zufälliger Algorithmus"
             algorithmus_feld = widgets.QLineEdit(text)
             algorithmus_feld.setFixedWidth(357)
-            algorithmus_feld.textChanged.connect(self._update_start_knopf())
+            algorithmus_feld.textChanged.connect(self._eingaben_geaendert())
             self._algorithmus_felder.append(algorithmus_feld)
 
             label = widgets.QLabel("Teilnehmer {}".format(index + 1))
@@ -175,7 +194,4 @@ class StartBattleView(widgets.QWidget):
         self._layout.addWidget(self._start_knopf, reihe + 2, 0, 1, -1, core.Qt.AlignHCenter)
         self._layout.addItem(self._bottom_spacer, reihe + 3, 0)
 
-        self._update_start_knopf()
-
-    def _update_start_knopf(self):
-        self._start_knopf.setEnabled(self.is_valid)
+        self._eingaben_geaendert()
