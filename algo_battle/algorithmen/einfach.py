@@ -9,7 +9,7 @@ class Zufall(Algorithmus):
     _max_schritte = 50
 
     def __init__(self):
-        super().__init__("Zufall")
+        super().__init__()
         self._zaehler = 0
         self._schritte = 0
 
@@ -26,13 +26,13 @@ class Zufall(Algorithmus):
 class Liner(Algorithmus):
 
     def __init__(self):
-        super().__init__("Liner")
+        super().__init__()
         self._richtung = Richtung.Links
         self._reihe_aendern = False
         self._linker_rand = True
         self._reihen_aender_richtung = None
 
-    def start(self):
+    def _bereite_vor(self):
         if self.abstand(Richtung.Unten) > self.abstand(Richtung.Oben):
             self._reihen_aender_richtung = Richtung.Unten
         else:

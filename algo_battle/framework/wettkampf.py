@@ -137,7 +137,10 @@ class Teilnehmer:
         self._algorithmus = algorithmus
         self._wettkampf = wettkampf
         self._zug_pause = zug_pause
+
         self._thread = None
+        self._x = -1
+        self._y = -1
 
     @property
     def nummer(self):
@@ -157,24 +160,24 @@ class Teilnehmer:
 
     @property
     def x(self) -> int:
-        return self._algorithmus.x
+        return self._x
 
     @x.setter
     def x(self, value: int):
-        self._algorithmus.x = value
+        self._x = value
 
     @property
     def y(self) -> int:
-        return self._algorithmus.y
+        return self._y
 
     @y.setter
     def y(self, value: int):
-        self._algorithmus.y = value
+        self._y = value
 
     def start(self):
         self._thread = Thread(name=self.name, target=self._run, daemon=True)
         self._algorithmus.arena = self._wettkampf.arena_definition
-        self._algorithmus.start()
+        self._algorithmus.start(self.x, self.y)
         self._thread.start()
 
     def _run(self):
@@ -186,7 +189,7 @@ class Teilnehmer:
                     zug_nummer = self._wettkampf.aktueller_zug
                     aktuelle_punkte = self._wettkampf.punkte_von(self)
                 # Plane nächsten Schritt (außerhalb der zug_berechtigung, um Wettkampf nicht zu blockieren)
-                self._algorithmus.aktualisiere(zustand, zug_nummer, aktuelle_punkte)
+                self._algorithmus.aktualisiere(self.x, self.y, zustand, zug_nummer, aktuelle_punkte)
 
             # Führe geplanten Schritt aus
             if self._wettkampf.laeuft_noch:

@@ -13,8 +13,8 @@ class Algorithmus(ABC):
             self._name = self.__class__.__name__
         self._richtung = Richtung.zufall()
         self._arena = None
-        self.x = -1
-        self.y = -1
+        self._x = -1
+        self._y = -1
 
     @property
     def name(self) -> str:
@@ -36,19 +36,26 @@ class Algorithmus(ABC):
 
     def abstand(self, richtung: Richtung):
         if richtung is Richtung.Oben:
-            return self.y
+            return self._y
         if richtung is Richtung.Rechts:
-            return self.arena.breite - self.x
+            return self.arena.breite - self._x
         if richtung is Richtung.Unten:
-            return self.arena.hoehe - self.y
+            return self.arena.hoehe - self._y
         if richtung is Richtung.Links:
-            return self.x
+            return self._x
         raise ValueError("Unbekannte Richtung: {}".format(richtung))
 
-    def start(self):
+    def start(self, x: int, y: int):
+        self._x = x
+        self._y = y
+        self._bereite_vor()
+
+    def _bereite_vor(self):
         pass
 
-    def aktualisiere(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int):
+    def aktualisiere(self, x: int, y: int, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int):
+        self._x = x
+        self._y = y
         neue_richtung = self._gib_richtung(letzter_zustand, zug_nummer, aktuelle_punkte)
         if neue_richtung:
             self._richtung = neue_richtung
