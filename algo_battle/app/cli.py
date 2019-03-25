@@ -1,16 +1,20 @@
 import util
 import algorithmen.einfach as einfache_algorithmen
 
+from typing import Iterable
 from framework.wettkampf import Wettkampf, ArenaDefinition
 
 
 # TODO Default values and fallback algorithm module in config
-def run_cli():
+def run_cli(module: Iterable[str] = None):
     print("Algo-Battle")
     anzahl_runden = util.input.lese_zahl("Anzahl der Runden", 9)
     anzahl_teilnehmer = util.input.lese_zahl("Anzahl der Teilnehmer", 2)
 
     fallback_algorithmen = util.gib_algorithmen_in_modul(einfache_algorithmen)
+    if module:
+        for modul_pfad in module:
+            fallback_algorithmen.extend(util.gib_algorithmen_in_modul(modul_pfad))
     algorithmen = [
         util.input.lese_algorithmus("Algorithmus {}".format(i + 1), fallback_algorithmen) for i in range(anzahl_teilnehmer)
     ]

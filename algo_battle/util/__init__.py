@@ -5,6 +5,7 @@ import pandas as pd
 import inspect
 
 from typing import Type, List
+from importlib import import_module
 from framework.wettkampf import Wettkampf, Gleichstand
 from framework.algorithm import Algorithmus
 
@@ -19,6 +20,13 @@ except ImportError:
 
 
 def gib_algorithmen_in_modul(modul) -> List[Type[Algorithmus]]:
+    if isinstance(modul, str):
+        try:
+            modul = import_module(modul)
+        except (ImportError, ValueError):
+            logger().error("Das Modul '{}' konnte nicht gefunden werden".format(modul))
+            return []
+
     return [
         m[1] for m in inspect.getmembers(modul,
             lambda m: inspect.isclass(m) and m.__module__ == modul.__name__ and issubclass(m, Algorithmus)

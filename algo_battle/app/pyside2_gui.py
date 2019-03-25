@@ -1,10 +1,9 @@
 import logging
 import sys
 import util
-import importlib
 import algorithmen.einfach as einfache_algorithmen
 
-from typing import Optional, Iterable, Tuple, List, Type
+from typing import Optional, Iterable, Tuple
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
 
@@ -24,11 +23,7 @@ def start_gui(module: Iterable[str] = None):
     _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(einfache_algorithmen))
     if module:
         for modul_pfad in module:
-            try:
-                modul = importlib.import_module(modul_pfad)
-                _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(modul))
-            except (ImportError, ValueError):
-                logger().exception("Das Modul '{}' konnte nicht gefunden werden".format(modul_pfad))
+            _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(modul_pfad))
 
     app = widgets.QApplication()
     font = app.font()
