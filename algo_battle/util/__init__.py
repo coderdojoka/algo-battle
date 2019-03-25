@@ -2,8 +2,11 @@ import os
 import logging
 import numpy as np
 import pandas as pd
+import inspect
 
+from typing import Type, List
 from framework.wettkampf import Wettkampf, Gleichstand
+from framework.algorithm import Algorithmus
 
 # Imports zur Bereitstellung innerer Module
 import util.input
@@ -13,6 +16,14 @@ try:
     bilder_support = True
 except ImportError:
     bilder_support = False
+
+
+def gib_algorithmen_in_modul(modul) -> List[Type[Algorithmus]]:
+    return [
+        m[1] for m in inspect.getmembers(modul,
+            lambda m: inspect.isclass(m) and m.__module__ == modul.__name__ and issubclass(m, Algorithmus)
+        )
+    ]
 
 
 def wettkampf_ergebnis(wettkampf: Wettkampf) -> str:

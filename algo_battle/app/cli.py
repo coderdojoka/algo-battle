@@ -1,4 +1,3 @@
-import inspect
 import util
 import algorithmen.einfach as einfache_algorithmen
 
@@ -11,7 +10,7 @@ def run_cli():
     anzahl_runden = util.input.lese_zahl("Anzahl der Runden", 9)
     anzahl_teilnehmer = util.input.lese_zahl("Anzahl der Teilnehmer", 2)
 
-    fallback_algorithmen = [m[1] for m in inspect.getmembers(einfache_algorithmen, lambda m: inspect.isclass(m) and m.__module__ == einfache_algorithmen.__name__)]
+    fallback_algorithmen = util.gib_algorithmen_in_modul(einfache_algorithmen)
     algorithmen = [
         util.input.lese_algorithmus("Algorithmus {}".format(i + 1), fallback_algorithmen) for i in range(anzahl_teilnehmer)
     ]
