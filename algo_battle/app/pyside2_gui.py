@@ -1,6 +1,10 @@
+import logging
 import sys
+import util
+import importlib
+import algorithmen.einfach as einfache_algorithmen
 
-from typing import Optional, Iterable, Tuple
+from typing import Optional, Iterable, Tuple, List, Type
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
 
@@ -13,8 +17,19 @@ _max_teilnehmer_anzahl = 10
 _min_arena_groesse = 75
 _max_arena_groesse = 300
 
+_verfuegbare_algorithmen = []
 
-def start_gui():
+
+def start_gui(module: Iterable[str] = None):
+    _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(einfache_algorithmen))
+    if module:
+        for modul_pfad in module:
+            try:
+                modul = importlib.import_module(modul_pfad)
+                _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(modul))
+            except (ImportError, ValueError):
+                logger().exception("Das Modul '{}' konnte nicht gefunden werden".format(modul_pfad))
+
     app = widgets.QApplication()
     font = app.font()
     font.setPointSize(_font_size)
@@ -27,6 +42,10 @@ def start_gui():
     main_view.move(widgets.QApplication.desktop().rect().center() - main_view.rect().center())
     main_view.show()
     sys.exit(app.exec_())
+
+
+def logger() -> logging.Logger:
+    return logging.getLogger("GUI")
 
 
 class MainView(widgets.QMainWindow):
@@ -44,9 +63,13 @@ class MainView(widgets.QMainWindow):
         self._start_battle_view = StartBattleView(self._status_bar)
         size_policy = widgets.QSizePolicy(widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Minimum)
         self._start_battle_view.setSizePolicy(size_policy)
-        self.setCentralWidget(self._start_battle_view)
 
         self._start_battle_view.start_knopf.clicked.connect(self.start_battle)
+
+        if not _verfuegbare_algorithmen:
+            self._status_bar.showMessage("Es konnten keine Algorithmen gefunden werden.")
+        else:
+            self.setCentralWidget(self._start_battle_view)
 
     def start_battle(self):
         if self._start_battle_view.is_valid:
@@ -121,21 +144,15 @@ class StartBattleView(widgets.QWidget):
 
     @property
     def algorithmen(self) -> Optional[Iterable[str]]:
-        if not self._algorithmen_valid:
-            return None
-        return [feld.text() for feld in self._algorithmus_felder]
+        return [feld.currentData() for feld in self._algorithmus_felder]
 
     @property
     def is_valid(self):
-        return self._anzahl_teilnehmer.hasAcceptableInput() and self._arena_groesse_valid and self._algorithmen_valid
+        return self._anzahl_teilnehmer.hasAcceptableInput() and self._arena_groesse_valid
 
     @property
     def _arena_groesse_valid(self):
         return self._arena_breite.hasAcceptableInput() and self._arena_hoehe.hasAcceptableInput()
-
-    @property
-    def _algorithmen_valid(self):
-        return all(feld.hasAcceptableInput() for feld in self._algorithmus_felder)
 
     def _eingaben_geaendert(self):
         self._start_knopf.setEnabled(self.is_valid)
@@ -161,7 +178,7 @@ class StartBattleView(widgets.QWidget):
             self._algorithmen.append("")
 
         for index, feld in enumerate(self._algorithmus_felder):
-            algorithmus = feld.text() if feld.hasAcceptableInput() else ""
+            algorithmus = feld.currentData()
             self._algorithmen[index] = algorithmus
             self._layout.removeWidget(feld)
             feld.deleteLater()
@@ -177,10 +194,18 @@ class StartBattleView(widgets.QWidget):
         self._algorithmus_label.clear()
         reihe = self._layout.rowCount()
         for index in range(self.anzahl_teilnehmer):
-            text = self._algorithmen[index] if self._algorithmen[index] else "zufälliger Algorithmus"
-            algorithmus_feld = widgets.QLineEdit(text)
+            algorithmus_feld = widgets.QComboBox()
             algorithmus_feld.setFixedWidth(357)
-            algorithmus_feld.textChanged.connect(self._eingaben_geaendert())
+            algorithmus_feld.setEditable(False)
+            algorithmus_feld.addItem("zufälliger Algorithmus", None)
+            for algorithmus in _verfuegbare_algorithmen:
+                algorithmus_feld.addItem(
+                    "{}.{}".format(algorithmus.__module__, algorithmus.__name__),
+                    algorithmus
+                )
+            vorher_ausgewaehlt = algorithmus_feld.findData(self._algorithmen[index])
+            if vorher_ausgewaehlt >= 0:
+                algorithmus_feld.setCurrentIndex(vorher_ausgewaehlt)
             self._algorithmus_felder.append(algorithmus_feld)
 
             label = widgets.QLabel("Teilnehmer {}".format(index + 1))
