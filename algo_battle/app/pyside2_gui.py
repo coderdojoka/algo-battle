@@ -2,6 +2,7 @@ import logging
 import sys
 import util
 import random
+import numpy as np
 import algorithmen.einfach as einfache_algorithmen
 
 from typing import Optional, Iterable, Tuple, Type
@@ -18,8 +19,6 @@ _min_teilnehmer_anzahl = 2
 _max_teilnehmer_anzahl = 10
 _min_arena_groesse = 75
 _max_arena_groesse = 300
-
-_wettkampf_view_update_rate = 1 / 30
 
 _verfuegbare_algorithmen = []
 
@@ -231,17 +230,18 @@ class StartBattleView(widgets.QWidget):
 
 
 _farben = [
-    [( 33, 119, 177), ( 78, 121, 165)],  # Blau
-    [(254, 128,  42), (241, 143,  59)],  # Orange
-    [( 48, 160,  57), ( 90, 161,  85)],  # Grün
-    [(213,  42,  45), (224,  88,  91)],  # Rot
-    [(147, 103, 186), (175, 122, 160)],  # Lila
-    [(140,  86,  76), (156, 117,  97)],  # Braun
-    [(226, 120, 192), (254, 158, 168)],  # Rosa
-    [(127, 127, 127), (186, 176, 172)],  # Grau
-    [(224, 224,  60), (237, 201,  88)],  # Gelb
-    [( 31, 190, 205), (119, 183, 178)],  # Türkis
+    [gui.QColor(33, 119, 177), gui.QColor(78, 121, 165)],  # Blau
+    [gui.QColor(254, 128, 42), gui.QColor(241, 143, 59)],  # Orange
+    [gui.QColor(48, 160, 57), gui.QColor(90, 161, 85)],  # Grün
+    [gui.QColor(213, 42, 45), gui.QColor(224, 88, 91)],  # Rot
+    [gui.QColor(147, 103, 186), gui.QColor(175, 122, 160)],  # Lila
+    [gui.QColor(140, 86, 76), gui.QColor(156, 117, 97)],  # Braun
+    [gui.QColor(226, 120, 192), gui.QColor(254, 158, 168)],  # Rosa
+    [gui.QColor(127, 127, 127), gui.QColor(186, 176, 172)],  # Grau
+    [gui.QColor(224, 224, 60), gui.QColor(237, 201, 88)],  # Gelb
+    [gui.QColor(31, 190, 205), gui.QColor(119, 183, 178)],  # Türkis
 ]
+
 
 # TODO Manage Colors
 class WettkampfView(widgets.QWidget):
@@ -250,6 +250,8 @@ class WettkampfView(widgets.QWidget):
         super().__init__()
         self._status_bar = status_bar
         self._teilnehmer_status = []
+        self.arena_view = None
+
         self._wettkampf = None
         # TODO Arena Canvas
         self._layout = widgets.QVBoxLayout()
@@ -266,7 +268,7 @@ class WettkampfView(widgets.QWidget):
         )
         self._initialisiere_view()
         self._wettkampf.start()
-        self._timer.start(_wettkampf_view_update_rate)
+        self._timer.start()
 
     def _initialisiere_view(self):
         widget = self._layout.takeAt(0)
@@ -275,8 +277,14 @@ class WettkampfView(widgets.QWidget):
             widget.deleteLater()
 
         status_container = widgets.QWidget()
+        self.arena_view = ArenaView(self._wettkampf, hat_gitter=True)
+
+        # TODO: sinnvolles Layout finden
         hbox = widgets.QHBoxLayout()
-        status_container.setLayout(hbox)
+        vbox = widgets.QHBoxLayout()
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.arena_view)
+        status_container.setLayout(vbox)
         for teilnehmer in self._wettkampf.teilnehmer:
             teilnehmer_status = TeilnehmerStatus(teilnehmer, self._wettkampf)
             self._teilnehmer_status.append(teilnehmer_status)
@@ -284,11 +292,14 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(status_container)
 
     def _aktualisiere_view(self):
+        self.arena_view.aktualisiere_view()
+
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view()
 
         if not self._wettkampf.laeuft_noch:
             self._timer.stop()
+            self.arena_view.aktualisiere_view() #  finales Bild zeichnen
             # TODO Handle finish
 
 
@@ -307,6 +318,7 @@ class TeilnehmerStatus(widgets.QGroupBox):
         self._layout.addRow("Punkte:", self._punkte_anzeige)
         self._layout.addRow("Züge:", self._zuege_anzeige)
         self.setLayout(self._layout)
+        self.setMinimumWidth(125)
 
     def aktualisiere_view(self):
         punkte_text = str(self._wettkampf.punkte_von(self._teilnehmer))
@@ -314,3 +326,94 @@ class TeilnehmerStatus(widgets.QGroupBox):
 
         zuege_text = str(self._wettkampf.zuege_von(self._teilnehmer))
         self._zuege_anzeige.setText(zuege_text)
+
+
+class ArenaView(widgets.QWidget):
+
+    def __init__(self, wettkampf: Wettkampf, block_breite: int = 8, block_hoehe: int = 8, hat_gitter: bool = True,
+                 gitter_farbe=core.Qt.blue):
+        super().__init__()
+        self._wettkampf = wettkampf
+
+        self._painter = gui.QPainter()
+        self._gitter_color = gitter_farbe
+        self._gitter_dicke = 1 if hat_gitter else 0
+        self._block_breite = block_breite
+        self._block_hoehe = block_hoehe
+
+        self._bloecke_in_breite = wettkampf.arena_definition.breite
+        self._bloecke_in_hoehe = wettkampf.arena_definition.hoehe
+
+        # Es werden pro Feld ein Block und um jeden Block eine Gitter Linie gezeichnet
+        self._img_width = self._bloecke_in_breite * self._block_breite + self._gitter_dicke * (self._bloecke_in_breite + 1)
+        self._img_height = self._bloecke_in_hoehe * self._block_hoehe + self._gitter_dicke * (
+                self._bloecke_in_hoehe + 1)
+
+        self._buffer = gui.QPixmap(self._img_width, self._img_height)
+        """
+        Pufferbild, um Off-Screen zu zeichnen.
+        """
+
+        self.setFixedSize(self._img_width, self._img_height)
+
+        # Gitter einmal zeichnen
+        self.clear()
+
+    def clear(self):
+        self._painter.begin(self._buffer)
+        self._painter.fillRect(0, 0, self._img_width, self._img_height, self.palette().color(self.backgroundRole()))
+        self._painter.end()
+        self._draw_gutter()
+
+    def _draw_gutter(self):
+        if self._gitter_dicke <= 0:
+            return
+
+        self._painter.begin(self._buffer)
+
+        pen = gui.QPen(self._gitter_color, 1)
+        self._painter.setPen(pen)
+
+        for x in range(self._bloecke_in_breite + 1):
+            tmp_x = x * (self._block_breite + self._gitter_dicke)
+            self._painter.drawLine(tmp_x, 0, tmp_x, self._img_height)
+
+        for y in range(self._bloecke_in_hoehe + 1):
+            tmp_y = y * (self._block_hoehe + self._gitter_dicke)
+            self._painter.drawLine(0, tmp_y, self._img_width, tmp_y)
+
+        self._painter.end()
+
+    def selektive_update(self, teilnehmer):
+        pass
+
+    def aktualisiere_view(self):
+        data = self._wettkampf.arena_snapshot
+        self._painter.begin(self._buffer)
+
+        with np.nditer(data, flags=["multi_index"]) as it:
+            for field in it:
+                x, y = it.multi_index
+                block_x = self.x_index2block_x(x)
+                block_y = self.y_index2block_y(y)
+
+                if field > -1:
+                    self._painter.fillRect(block_x, block_y, self._block_breite, self._block_hoehe, _farben[field][1])
+
+        # TODO: Versatz zwischen gezeichneten Felder und Teilnehmer Position! (im Hintergrund aktualisiert)
+        for tn in self._wettkampf.teilnehmer:
+            self._painter.fillRect(self.x_index2block_x(tn.x), self.y_index2block_y(tn.y), self._block_breite, self._block_hoehe, _farben[tn.nummer][0])
+
+        self._painter.end()
+        self.repaint()
+
+    def y_index2block_y(self, y):
+        return self._gitter_dicke + (self._block_hoehe + self._gitter_dicke) * y
+
+    def x_index2block_x(self, x):
+        return self._gitter_dicke + (self._block_breite + self._gitter_dicke) * x
+
+    def paintEvent(self, event: gui.QPaintEvent):
+        self._painter.begin(self)
+        self._painter.drawPixmap(0, 0, self._buffer)
+        self._painter.end()
