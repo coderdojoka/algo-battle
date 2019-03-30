@@ -76,15 +76,15 @@ class MainView(widgets.QMainWindow):
         self._status_bar.showMessage("Hello World")
         self._toolbar.addWidget(self._status_bar)
 
-        self._start_battle_view = StartBattleView(self._status_bar)
+        self._erstelle_wettkampf = ErstelleWettkampfView(self._status_bar)
         size_policy = widgets.QSizePolicy(widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Minimum)
-        self._start_battle_view.setSizePolicy(size_policy)
-        self._start_battle_view.start_knopf.clicked.connect(self.start_battle)
+        self._erstelle_wettkampf.setSizePolicy(size_policy)
+        self._erstelle_wettkampf.start_knopf.clicked.connect(self.start_battle)
 
         self._wettkampf_view = WettkampfView(self._status_bar)
 
         self._content_widget = widgets.QStackedWidget()
-        self._content_widget.addWidget(self._start_battle_view)
+        self._content_widget.addWidget(self._erstelle_wettkampf)
         self._content_widget.addWidget(self._wettkampf_view)
 
         if not _verfuegbare_algorithmen:
@@ -93,17 +93,16 @@ class MainView(widgets.QMainWindow):
             self.setCentralWidget(self._content_widget)
 
     def start_battle(self):
-        if self._start_battle_view.is_valid:
+        if self._erstelle_wettkampf.is_valid:
             self._wettkampf_view.starte_wettkampf(
-                self._start_battle_view.arena_groesse,
+                self._erstelle_wettkampf.arena_groesse,
                 (algorithmus if algorithmus else random.choice(_verfuegbare_algorithmen)
-                 for algorithmus in self._start_battle_view.algorithmen)
+                 for algorithmus in self._erstelle_wettkampf.algorithmen)
             )
             self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._wettkampf_view))
 
 
-# TODO Rename
-class StartBattleView(widgets.QWidget):
+class ErstelleWettkampfView(widgets.QWidget):
 
     def __init__(self, status_bar: widgets.QStatusBar):
         super().__init__()
@@ -199,7 +198,7 @@ class StartBattleView(widgets.QWidget):
             return
 
         while len(self._algorithmen) < self.anzahl_teilnehmer:
-            self._algorithmen.append("")
+            self._algorithmen.append(None)
 
         for index, feld in enumerate(self._algorithmus_felder):
             algorithmus = feld.currentData()
@@ -218,22 +217,13 @@ class StartBattleView(widgets.QWidget):
         self._algorithmus_label.clear()
         reihe = self._layout.rowCount()
         for index in range(self.anzahl_teilnehmer):
-            algorithmus_feld = widgets.QComboBox()
-            algorithmus_feld.setFixedWidth(357)
-            algorithmus_feld.setEditable(False)
-            algorithmus_feld.addItem("zufälliger Algorithmus", None)
-            for algorithmus in _verfuegbare_algorithmen:
-                algorithmus_feld.addItem(
-                    "{}.{}".format(algorithmus.__module__, algorithmus.__name__),
-                    algorithmus
-                )
+            algorithmus_feld = self._ersetelle_algorithmus_feld()
             vorher_ausgewaehlt = algorithmus_feld.findData(self._algorithmen[index])
             if vorher_ausgewaehlt >= 0:
                 algorithmus_feld.setCurrentIndex(vorher_ausgewaehlt)
             self._algorithmus_felder.append(algorithmus_feld)
 
-            # TODO Add competitor color
-            label = widgets.QLabel("Teilnehmer {}".format(index + 1))
+            label = self._erstelle_algorithmus_label(index)
             self._algorithmus_label.append(label)
 
             reihe = self._layout.rowCount() + 1
@@ -245,6 +235,28 @@ class StartBattleView(widgets.QWidget):
         self._layout.addItem(self._bottom_spacer, reihe + 3, 0)
 
         self._eingaben_geaendert()
+
+    @staticmethod
+    def _erstelle_algorithmus_label(index: int) -> widgets.QWidget:
+        label = widgets.QWidget()
+        farbe_und_label_layout = widgets.QHBoxLayout()
+        label.setLayout(farbe_und_label_layout)
+        farbe_und_label_layout.addWidget(TeilnehmerFarbe(index))
+        farbe_und_label_layout.addWidget(widgets.QLabel("Teilnehmer {}".format(index + 1)))
+        return label
+
+    @staticmethod
+    def _ersetelle_algorithmus_feld() -> widgets.QComboBox:
+        algorithmus_feld = widgets.QComboBox()
+        algorithmus_feld.setFixedWidth(357)
+        algorithmus_feld.setEditable(False)
+        algorithmus_feld.addItem("zufälliger Algorithmus", None)
+        for algorithmus in _verfuegbare_algorithmen:
+            algorithmus_feld.addItem(
+                "{}.{}".format(algorithmus.__module__, algorithmus.__name__),
+                algorithmus
+            )
+        return algorithmus_feld
 
 
 class WettkampfView(widgets.QWidget):
@@ -304,7 +316,6 @@ class WettkampfView(widgets.QWidget):
             # TODO Handle finish
 
 
-# TODO Add Competitor Color
 class TeilnehmerStatus(widgets.QGroupBox):
 
     def __init__(self, teilnehmer: Teilnehmer, wettkampf: Wettkampf):
@@ -321,6 +332,13 @@ class TeilnehmerStatus(widgets.QGroupBox):
         self._layout.addRow("Züge:", self._zuege_anzeige)
         self.setLayout(self._layout)
         self.setMinimumWidth(125)
+        self.setPalette(gui.QPalette(_farben[teilnehmer.nummer][1].darker(85)))
+        self.setAutoFillBackground(True)
+        self.setStyleSheet("""
+            QGroupBox::title {
+                margin-left: 5px;
+            }
+        """)
 
     def aktualisiere_view(self):
         punkte_text = str(self._wettkampf.punkte_von(self._teilnehmer))
@@ -328,6 +346,15 @@ class TeilnehmerStatus(widgets.QGroupBox):
 
         zuege_text = str(self._wettkampf.zuege_von(self._teilnehmer))
         self._zuege_anzeige.setText(zuege_text)
+
+
+class TeilnehmerFarbe(widgets.QLabel):
+
+    def __init__(self, teilnehmer_nummer: int, hoehe=15, breite=15):
+        super().__init__()
+        pixmap = gui.QPixmap(hoehe, breite)
+        pixmap.fill(_farben[teilnehmer_nummer][0])
+        self.setPixmap(pixmap)
 
 
 class ArenaView(widgets.QWidget):
