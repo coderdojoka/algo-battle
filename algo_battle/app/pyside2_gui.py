@@ -23,6 +23,21 @@ _max_arena_groesse = 300
 _verfuegbare_algorithmen = []
 
 
+# TODO Secondary colors are too strong
+_farben = [
+    [gui.QColor(33, 119, 177), gui.QColor(78, 121, 165)],  # Blau
+    [gui.QColor(254, 128, 42), gui.QColor(241, 143, 59)],  # Orange
+    [gui.QColor(48, 160, 57), gui.QColor(90, 161, 85)],  # Grün
+    [gui.QColor(213, 42, 45), gui.QColor(224, 88, 91)],  # Rot
+    [gui.QColor(147, 103, 186), gui.QColor(175, 122, 160)],  # Lila
+    [gui.QColor(140, 86, 76), gui.QColor(156, 117, 97)],  # Braun
+    [gui.QColor(226, 120, 192), gui.QColor(254, 158, 168)],  # Rosa
+    [gui.QColor(127, 127, 127), gui.QColor(186, 176, 172)],  # Grau
+    [gui.QColor(224, 224, 60), gui.QColor(237, 201, 88)],  # Gelb
+    [gui.QColor(31, 190, 205), gui.QColor(119, 183, 178)],  # Türkis
+]
+
+
 def start_gui(module: Iterable[str] = None):
     _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(einfache_algorithmen))
     if module:
@@ -215,6 +230,7 @@ class StartBattleView(widgets.QWidget):
                 algorithmus_feld.setCurrentIndex(vorher_ausgewaehlt)
             self._algorithmus_felder.append(algorithmus_feld)
 
+            # TODO Add competitor color
             label = widgets.QLabel("Teilnehmer {}".format(index + 1))
             self._algorithmus_label.append(label)
 
@@ -227,20 +243,6 @@ class StartBattleView(widgets.QWidget):
         self._layout.addItem(self._bottom_spacer, reihe + 3, 0)
 
         self._eingaben_geaendert()
-
-
-_farben = [
-    [gui.QColor(33, 119, 177), gui.QColor(78, 121, 165)],  # Blau
-    [gui.QColor(254, 128, 42), gui.QColor(241, 143, 59)],  # Orange
-    [gui.QColor(48, 160, 57), gui.QColor(90, 161, 85)],  # Grün
-    [gui.QColor(213, 42, 45), gui.QColor(224, 88, 91)],  # Rot
-    [gui.QColor(147, 103, 186), gui.QColor(175, 122, 160)],  # Lila
-    [gui.QColor(140, 86, 76), gui.QColor(156, 117, 97)],  # Braun
-    [gui.QColor(226, 120, 192), gui.QColor(254, 158, 168)],  # Rosa
-    [gui.QColor(127, 127, 127), gui.QColor(186, 176, 172)],  # Grau
-    [gui.QColor(224, 224, 60), gui.QColor(237, 201, 88)],  # Gelb
-    [gui.QColor(31, 190, 205), gui.QColor(119, 183, 178)],  # Türkis
-]
 
 
 class WettkampfView(widgets.QWidget):
@@ -274,33 +276,33 @@ class WettkampfView(widgets.QWidget):
             # FIXME
             widget.deleteLater()
 
-        status_container = widgets.QWidget()
-        self._arena_view = ArenaView(self._wettkampf, hat_gitter=True)
-
-        # TODO: sinnvolles Layout finden
-        hbox = widgets.QHBoxLayout()
-        vbox = widgets.QHBoxLayout()
-        vbox.addLayout(hbox)
-        vbox.addWidget(self._arena_view)
-        status_container.setLayout(vbox)
+        teilnehmer_container = widgets.QWidget()
+        teilnehmer_layout = widgets.QHBoxLayout()
+        teilnehmer_container.setLayout(teilnehmer_layout)
         for teilnehmer in self._wettkampf.teilnehmer:
             teilnehmer_status = TeilnehmerStatus(teilnehmer, self._wettkampf)
             self._teilnehmer_status.append(teilnehmer_status)
-            hbox.addWidget(teilnehmer_status)
-        self._layout.addWidget(status_container)
+            teilnehmer_layout.addWidget(teilnehmer_status)
+
+        self._arena_view = ArenaView(self._wettkampf, hat_gitter=True)
+        self._layout.addWidget(teilnehmer_container)
+        self._layout.addWidget(self._arena_view)
 
     def _aktualisiere_view(self):
         self._arena_view.aktualisiere_view()
-
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view()
 
         if not self._wettkampf.laeuft_noch:
             self._timer.stop()
+            self._wettkampf.berechne_punkte_neu()
+            for teilnehmer_status in self._teilnehmer_status:
+                teilnehmer_status.aktualisiere_view()
             self._arena_view.aktualisiere_view()
             # TODO Handle finish
 
 
+# TODO Add Competitor Color
 class TeilnehmerStatus(widgets.QGroupBox):
 
     def __init__(self, teilnehmer: Teilnehmer, wettkampf: Wettkampf):
@@ -376,6 +378,7 @@ class ArenaView(widgets.QWidget):
         self._painter.end()
 
     def aktualisiere_view(self):
+        # TODO Snapshot should return competitor states (Position, Direction) and arena data
         data = self._wettkampf.arena_snapshot
         self._painter.begin(self._pixmap)
 
@@ -390,6 +393,7 @@ class ArenaView(widgets.QWidget):
 
         # TODO: Versatz zwischen gezeichneten Felder und Teilnehmer Position! (im Hintergrund aktualisiert)
         for tn in self._wettkampf.teilnehmer:
+            # TODO Draw direction indicator
             self._painter.fillRect(self.x_index2block_x(tn.x), self.y_index2block_y(tn.y), self._block_breite, self._block_hoehe, _farben[tn.nummer][0])
 
         self._painter.end()
