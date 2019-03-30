@@ -123,7 +123,7 @@ def speichere_arena_bild(runde: int, wettkampf: Wettkampf, feld_groesse=9, ordne
     img = Image.new("RGB", (arena.breite * feld_groesse, arena.hoehe * feld_groesse))
     draw = ImageDraw.Draw(img)
 
-    arena_felder = wettkampf.arena_snapshot
+    arena_felder = wettkampf.wettkampf_snapshot
     it = np.nditer(arena_felder, flags=["multi_index"])
     while not it.finished:
         wert = it[0]

@@ -1,4 +1,5 @@
 import logging
+import math
 import sys
 import util
 import random
@@ -335,6 +336,7 @@ class ArenaView(widgets.QWidget):
         super().__init__()
         self._wettkampf = wettkampf
 
+        self._teilnehmer_snapshots = []
         self._painter = gui.QPainter()
         self._gitter_color = gitter_farbe
         self._gitter_dicke = 1 if hat_gitter else 0
@@ -348,6 +350,10 @@ class ArenaView(widgets.QWidget):
         self._img_width = self._bloecke_in_breite * self._block_breite + self._gitter_dicke * (self._bloecke_in_breite + 1)
         self._img_height = self._bloecke_in_hoehe * self._block_hoehe + self._gitter_dicke * (self._bloecke_in_hoehe + 1)
         self._pixmap = gui.QPixmap(self._img_width, self._img_height)
+
+        self._direction_arrow = gui.QPolygonF([core.QPointF(-self._block_breite, -self._block_hoehe),
+                                               core.QPointF(self._block_breite, 0),
+                                               core.QPointF(-self._block_breite, self._block_hoehe)])
 
         self.setFixedSize(self._img_width, self._img_height)
         self._initialisiere_view()
@@ -378,8 +384,7 @@ class ArenaView(widgets.QWidget):
         self._painter.end()
 
     def aktualisiere_view(self):
-        # TODO Snapshot should return competitor states (Position, Direction) and arena data
-        data = self._wettkampf.arena_snapshot
+        data, self._teilnehmer_snapshots = self._wettkampf.wettkampf_snapshot
         self._painter.begin(self._pixmap)
 
         with np.nditer(data, flags=["multi_index"]) as it:
@@ -390,11 +395,6 @@ class ArenaView(widgets.QWidget):
 
                 if field > -1:
                     self._painter.fillRect(block_x, block_y, self._block_breite, self._block_hoehe, _farben[field][1])
-
-        # TODO: Versatz zwischen gezeichneten Felder und Teilnehmer Position! (im Hintergrund aktualisiert)
-        for tn in self._wettkampf.teilnehmer:
-            # TODO Draw direction indicator
-            self._painter.fillRect(self.x_index2block_x(tn.x), self.y_index2block_y(tn.y), self._block_breite, self._block_hoehe, _farben[tn.nummer][0])
 
         self._painter.end()
         self.repaint()
@@ -408,4 +408,18 @@ class ArenaView(widgets.QWidget):
     def paintEvent(self, event: gui.QPaintEvent):
         self._painter.begin(self)
         self._painter.drawPixmap(0, 0, self._pixmap)
+
+        # Position/Richtung hier zeichnen, da der Pfeil sonst nicht überzeichnet wird
+        for tn in self._teilnehmer_snapshots:
+
+            self._painter.save()
+            angle = math.degrees(math.atan2(tn.richtung.dy, tn.richtung.dx))
+
+            self._painter.translate(self.x_index2block_x(tn.x + .5), self.y_index2block_y(tn.y + .5))
+            self._painter.rotate(angle)
+
+            self._painter.setBrush(gui.QBrush(_farben[tn.nummer][0]))
+            self._painter.drawPolygon(self._direction_arrow)
+            self._painter.restore()
+
         self._painter.end()
