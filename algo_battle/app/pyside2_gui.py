@@ -54,7 +54,6 @@ def start_gui(module: Iterable[str] = None):
     main_view = MainView()
     main_view.setWindowTitle("Algo-Battle")
     main_view.setGeometry(0, 0, _initial_width, _initial_height)
-    # main_view.setFixedSize(_initial_width, _initial_height)
     main_view.move(widgets.QApplication.desktop().rect().center() - main_view.rect().center())
     main_view.show()
     sys.exit(app.exec_())
@@ -264,6 +263,7 @@ class WettkampfView(widgets.QWidget):
     def __init__(self, status_bar: widgets.QStatusBar):
         super().__init__()
         self._status_bar = status_bar
+        self._fortschritts_balken = widgets.QProgressBar()
         self._teilnehmer_status = []
         self._arena_view = None
 
@@ -290,6 +290,11 @@ class WettkampfView(widgets.QWidget):
             # FIXME
             widget.deleteLater()
 
+        self._fortschritts_balken.setRange(0, self._wettkampf.anzahl_zuege)
+        self._fortschritts_balken.setValue(0)
+        self._fortschritts_balken.setFormat("Züge %v/{}".format(self._wettkampf.anzahl_zuege))
+        self._status_bar.addPermanentWidget(self._fortschritts_balken, stretch=1)
+
         teilnehmer_container = widgets.QWidget()
         teilnehmer_layout = widgets.QHBoxLayout()
         teilnehmer_container.setLayout(teilnehmer_layout)
@@ -303,6 +308,7 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(self._arena_view)
 
     def _aktualisiere_view(self):
+        self._fortschritts_balken.setValue(self._wettkampf.aktueller_zug)
         self._arena_view.aktualisiere_view()
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view()
@@ -310,6 +316,7 @@ class WettkampfView(widgets.QWidget):
         if not self._wettkampf.laeuft_noch:
             self._timer.stop()
             self._wettkampf.berechne_punkte_neu()
+            self._fortschritts_balken.setValue(self._wettkampf.aktueller_zug)
             for teilnehmer_status in self._teilnehmer_status:
                 teilnehmer_status.aktualisiere_view()
             self._arena_view.aktualisiere_view()
@@ -332,7 +339,7 @@ class TeilnehmerStatus(widgets.QGroupBox):
         self._layout.addRow("Züge:", self._zuege_anzeige)
         self.setLayout(self._layout)
         self.setMinimumWidth(125)
-        self.setPalette(gui.QPalette(_farben[teilnehmer.nummer][1].darker(85)))
+        self.setPalette(gui.QPalette(_farben[teilnehmer.nummer][1].darker(80)))
         self.setAutoFillBackground(True)
         self.setStyleSheet("""
             QGroupBox::title {

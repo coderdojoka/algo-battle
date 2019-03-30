@@ -81,6 +81,9 @@ class Wettkampf:
     def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._zuege_pro_teilnehmer[teilnehmer]
 
+    def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
+        return self._punkte_pro_teilnehmer[teilnehmer]
+
     def berechne_punkte_neu(self):
         felder = self._arena.snapshot
         felder_pro_wert = {t.nummer: 0 for t in self.teilnehmer}
@@ -93,9 +96,6 @@ class Wettkampf:
             nummer = teilnehmer.nummer
             punkte = felder_pro_wert.get(nummer, 0)
             self._punkte_pro_teilnehmer[teilnehmer] = punkte
-
-    def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
-        return self._punkte_pro_teilnehmer[teilnehmer]
 
     @property
     def laeuft_noch(self) -> bool:
