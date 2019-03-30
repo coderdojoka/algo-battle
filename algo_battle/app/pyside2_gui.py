@@ -243,17 +243,15 @@ _farben = [
 ]
 
 
-# TODO Manage Colors
 class WettkampfView(widgets.QWidget):
 
     def __init__(self, status_bar: widgets.QStatusBar):
         super().__init__()
         self._status_bar = status_bar
         self._teilnehmer_status = []
-        self.arena_view = None
+        self._arena_view = None
 
         self._wettkampf = None
-        # TODO Arena Canvas
         self._layout = widgets.QVBoxLayout()
         self.setLayout(self._layout)
 
@@ -277,13 +275,13 @@ class WettkampfView(widgets.QWidget):
             widget.deleteLater()
 
         status_container = widgets.QWidget()
-        self.arena_view = ArenaView(self._wettkampf, hat_gitter=True)
+        self._arena_view = ArenaView(self._wettkampf, hat_gitter=True)
 
         # TODO: sinnvolles Layout finden
         hbox = widgets.QHBoxLayout()
         vbox = widgets.QHBoxLayout()
         vbox.addLayout(hbox)
-        vbox.addWidget(self.arena_view)
+        vbox.addWidget(self._arena_view)
         status_container.setLayout(vbox)
         for teilnehmer in self._wettkampf.teilnehmer:
             teilnehmer_status = TeilnehmerStatus(teilnehmer, self._wettkampf)
@@ -292,14 +290,14 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(status_container)
 
     def _aktualisiere_view(self):
-        self.arena_view.aktualisiere_view()
+        self._arena_view.aktualisiere_view()
 
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view()
 
         if not self._wettkampf.laeuft_noch:
             self._timer.stop()
-            self.arena_view.aktualisiere_view() #  finales Bild zeichnen
+            self._arena_view.aktualisiere_view()
             # TODO Handle finish
 
 
@@ -331,7 +329,7 @@ class TeilnehmerStatus(widgets.QGroupBox):
 class ArenaView(widgets.QWidget):
 
     def __init__(self, wettkampf: Wettkampf, block_breite: int = 8, block_hoehe: int = 8, hat_gitter: bool = True,
-                 gitter_farbe=core.Qt.blue):
+                 gitter_farbe=gui.QColor(200, 200, 200)):
         super().__init__()
         self._wettkampf = wettkampf
 
@@ -346,30 +344,23 @@ class ArenaView(widgets.QWidget):
 
         # Es werden pro Feld ein Block und um jeden Block eine Gitter Linie gezeichnet
         self._img_width = self._bloecke_in_breite * self._block_breite + self._gitter_dicke * (self._bloecke_in_breite + 1)
-        self._img_height = self._bloecke_in_hoehe * self._block_hoehe + self._gitter_dicke * (
-                self._bloecke_in_hoehe + 1)
-
-        self._buffer = gui.QPixmap(self._img_width, self._img_height)
-        """
-        Pufferbild, um Off-Screen zu zeichnen.
-        """
+        self._img_height = self._bloecke_in_hoehe * self._block_hoehe + self._gitter_dicke * (self._bloecke_in_hoehe + 1)
+        self._pixmap = gui.QPixmap(self._img_width, self._img_height)
 
         self.setFixedSize(self._img_width, self._img_height)
+        self._initialisiere_view()
 
-        # Gitter einmal zeichnen
-        self.clear()
-
-    def clear(self):
-        self._painter.begin(self._buffer)
+    def _initialisiere_view(self):
+        self._painter.begin(self._pixmap)
         self._painter.fillRect(0, 0, self._img_width, self._img_height, self.palette().color(self.backgroundRole()))
         self._painter.end()
-        self._draw_gutter()
+        self._draw_gitter()
 
-    def _draw_gutter(self):
+    def _draw_gitter(self):
         if self._gitter_dicke <= 0:
             return
 
-        self._painter.begin(self._buffer)
+        self._painter.begin(self._pixmap)
 
         pen = gui.QPen(self._gitter_color, 1)
         self._painter.setPen(pen)
@@ -384,12 +375,9 @@ class ArenaView(widgets.QWidget):
 
         self._painter.end()
 
-    def selektive_update(self, teilnehmer):
-        pass
-
     def aktualisiere_view(self):
         data = self._wettkampf.arena_snapshot
-        self._painter.begin(self._buffer)
+        self._painter.begin(self._pixmap)
 
         with np.nditer(data, flags=["multi_index"]) as it:
             for field in it:
@@ -415,5 +403,5 @@ class ArenaView(widgets.QWidget):
 
     def paintEvent(self, event: gui.QPaintEvent):
         self._painter.begin(self)
-        self._painter.drawPixmap(0, 0, self._buffer)
+        self._painter.drawPixmap(0, 0, self._pixmap)
         self._painter.end()
