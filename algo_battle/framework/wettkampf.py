@@ -4,6 +4,9 @@ import random
 
 from typing import Iterable, List, Optional, Tuple
 from threading import Thread, RLock
+
+import pandas as pd
+
 from framework.domain import ArenaDefinition, FeldZustand, Richtung
 from framework.algorithm import Algorithmus
 
@@ -294,3 +297,60 @@ class Arena:
 
     def ist_in_feld(self, x: int, y: int) -> bool:
         return 0 <= x < self._felder.shape[0] and 0 <= y < self._felder.shape[1]
+
+
+class EventStatistiken:
+
+    def __init__(self):
+        self._daten = pd.DataFrame()
+
+    @property
+    def daten(self) -> pd.DataFrame:
+        return self._daten
+
+    def speicher_runde(self, wettkampf: Wettkampf, runde=-1):
+        sieger = wettkampf.sieger
+        rohdaten = {}
+        for teilnehmer in wettkampf.teilnehmer:
+            nummer = teilnehmer.nummer + 1
+            name = teilnehmer.name
+            rohdaten[(nummer, name, "Züge")] = wettkampf.zuege_von(teilnehmer)
+            rohdaten[(nummer, name, "Punkte")] = wettkampf.punkte_von(teilnehmer)
+            rohdaten[(nummer, name, "Siege")] = 1 if teilnehmer is sieger else 0
+
+        if runde < 0:
+            runde = self._daten.shape[0]
+        runden_daten = pd.DataFrame(rohdaten, index=[runde])
+        runden_daten.index.name = "Runde"
+        runden_daten.columns.names = ["Nummer", "Name", "Statistik"]
+
+        self._daten = self._daten.append(runden_daten)
+
+    @property
+    def zusammenfassung(self) -> str:
+        siege = self._daten.xs("Siege", axis="columns", level=2, drop_level=True).sum()
+        max_siege = siege.max()
+        gewinner = siege[siege == max_siege].index
+        if len(siege) == len(gewinner):
+            gewinner_nachricht = "Gleichstand! Alle Teilnehmer haben {} Runde{} gewonnen.".format(
+                max_siege, "n" if max_siege > 1 else ""
+            )
+        else:
+            gewinner_nachricht = "Teilnehmer {} gewinn{} mit {} Sieg{}!".format(
+                ", ".join("[{}] {}".format(t[0], t[1]) for t in gewinner),
+                "en" if len(gewinner) > 1 else "t", max_siege, "en" if max_siege > 1 else ""
+            )
+
+        zuege_durchschnitt = self._daten.xs("Züge", axis="columns", level=2, drop_level=True).mean()
+        zuege_nachricht = "Durchschnittliche Züge: {}".format(" | ".join(
+            "[{}] {}: {:.2f}".format(nummer, name, zuege) for (nummer, name), zuege in zuege_durchschnitt.iteritems()
+        ))
+
+        punkte_durchschnitt = self._daten.xs("Punkte", axis="columns", level=2, drop_level=True).mean()
+        punkte_nachricht = "Durchschnittliche Punkte: {}".format(" | ".join(
+            "[{}] {}: {:.2f}".format(nummer, name, punkte) for (nummer, name), punkte in punkte_durchschnitt.iteritems()
+        ))
+
+        return "Zusammenfassung: {}\n{}\n{}".format(
+            gewinner_nachricht, zuege_nachricht, punkte_nachricht
+        )

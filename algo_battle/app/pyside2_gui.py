@@ -9,8 +9,7 @@ import algorithmen.einfach as einfache_algorithmen
 from typing import Optional, Iterable, Tuple, Type
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
-from framework.domain import Richtung
-from framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition
+from framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken
 from framework.algorithm import Algorithmus
 
 
@@ -72,15 +71,28 @@ class MainView(widgets.QMainWindow):
         self._toolbar.setFloatable(False)
         self._toolbar.setMovable(False)
         self._status_bar = widgets.QStatusBar()
+        self._status_bar_widgets = []
         self._status_bar.showMessage("Hello World")
         self._toolbar.addWidget(self._status_bar)
 
-        self._erstelle_wettkampf = ErstelleWettkampfView(self._status_bar)
+        self._erstelle_wettkampf = ErstelleWettkampfView(self)
         size_policy = widgets.QSizePolicy(widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Minimum)
         self._erstelle_wettkampf.setSizePolicy(size_policy)
-        self._erstelle_wettkampf.start_knopf.clicked.connect(self.start_battle)
+        self._erstelle_wettkampf.start_knopf.clicked.connect(self.starte_wettkampf)
 
-        self._wettkampf_view = WettkampfView(self._status_bar)
+        self._algorithmen = []
+        self._statistiken = EventStatistiken()
+        self._wettkampf_view = WettkampfView(self)
+        self._neue_runde_button = widgets.QPushButton("Neue Runde")
+        self._neue_runde_button.clicked.connect(self._neue_runde)
+        self._speicher_bild_button = widgets.QPushButton("Speicher Bild")
+        self._speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
+        self._speicher_bild_button.setDisabled(True)
+        self._zeige_statistiken_button = widgets.QPushButton("Statistiken")
+        self._zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
+        self._zeige_statistiken_button.setDisabled(True)
+        self._neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
+        self._neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
 
         self._content_widget = widgets.QStackedWidget()
         self._content_widget.addWidget(self._erstelle_wettkampf)
@@ -91,21 +103,79 @@ class MainView(widgets.QMainWindow):
         else:
             self.setCentralWidget(self._content_widget)
 
-    def start_battle(self):
+    def starte_wettkampf(self):
         if self._erstelle_wettkampf.is_valid:
-            self._wettkampf_view.starte_wettkampf(
-                self._erstelle_wettkampf.arena_groesse,
-                (algorithmus if algorithmus else random.choice(_verfuegbare_algorithmen)
-                 for algorithmus in self._erstelle_wettkampf.algorithmen)
-            )
+            if not self._algorithmen:
+                self._algorithmen = [algorithmus if algorithmus else random.choice(_verfuegbare_algorithmen)
+                                     for algorithmus in self._erstelle_wettkampf.algorithmen]
+            self._wettkampf_view.starte_wettkampf(self._erstelle_wettkampf.arena_groesse, self._algorithmen)
             self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._wettkampf_view))
+
+    def wettkampf_beendet(self):
+        wettkampf = self._wettkampf_view.wettkampf
+        self._statistiken.speicher_runde(wettkampf)
+
+        sieger = wettkampf.sieger
+        if sieger is Gleichstand:
+            ergebnis_nachricht = "Gleichstand! Es gibt keinen Gewinner."
+        else:
+            ergebnis_nachricht = "Teilnehmer {} gewinnt!".format(sieger)
+
+        ergebnis_label = widgets.QLabel(ergebnis_nachricht)
+        self.zeige_status_widget(ergebnis_label, stretch=1)
+        spacer_label1 = widgets.QLabel("")  # TODO Check if necessary
+        self.zeige_status_widget(spacer_label1, stretch=1)
+        self.zeige_status_widget(self._neue_runde_button)
+        self.zeige_status_widget(self._speicher_bild_button)
+        self.zeige_status_widget(self._zeige_statistiken_button)
+        spacer_label2 = widgets.QLabel("")
+        self.zeige_status_widget(spacer_label2, stretch=1)
+        self.zeige_status_widget(self._neuer_wettkampf_button)
+
+    def zeige_status_nachricht(self, nachricht: str):
+        self._status_bar.showMessage(nachricht)
+
+    def zeige_status_widget(self, widget: widgets.QWidget, stretch=0):
+        self._status_bar.addPermanentWidget(widget, stretch)
+        widget.show()
+        self._status_bar_widgets.append(widget)
+
+    def clear_status_bar(self):
+        self._status_bar.clearMessage()
+        for widget in self._status_bar_widgets:
+            self._status_bar.removeWidget(widget)
+            if isinstance(widget, widgets.QLabel):
+                widget.deleteLater()
+        self._status_bar_widgets.clear()
+
+    def _neue_runde(self):
+        self.clear_status_bar()
+        self.starte_wettkampf()
+
+    def _speicher_wettkampf_bild(self):
+        pass  # TODO
+
+    def _zeige_event_statistiken(self):
+        dialog = widgets.QDialog()
+        dialog_layout = widgets.QVBoxLayout()
+        dialog.setLayout(dialog_layout)
+
+        # TODO
+
+        dialog.exec_()
+
+    def _neuer_wettkampf(self):
+        self.clear_status_bar()
+        self._algorithmen.clear()
+        self._statistiken = EventStatistiken()
+        self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._erstelle_wettkampf))
 
 
 class ErstelleWettkampfView(widgets.QWidget):
 
-    def __init__(self, status_bar: widgets.QStatusBar):
+    def __init__(self, main_view: MainView):
         super().__init__()
-        self._status_bar = status_bar
+        self._main_view = main_view
 
         self._anzahl_teilnehmer = widgets.QLineEdit("2")
         self._anzahl_teilnehmer.setFixedWidth(100)
@@ -189,7 +259,7 @@ class ErstelleWettkampfView(widgets.QWidget):
             arena_groesse_nachricht = "Die Breite/Höhe der Arena muss zwischen {} und {} liegen.".format(
                 _min_arena_groesse, _max_arena_groesse
             )
-        self._status_bar.showMessage("{}\n{}".format(teilnehmer_anzahl_nachricht, arena_groesse_nachricht))
+        self._main_view.zeige_status_nachricht("{}\n{}".format(teilnehmer_anzahl_nachricht, arena_groesse_nachricht))
 
     def _teilnehmer_anzahl_geaendert(self):
         if not self._anzahl_teilnehmer.hasAcceptableInput():
@@ -260,9 +330,9 @@ class ErstelleWettkampfView(widgets.QWidget):
 
 class WettkampfView(widgets.QWidget):
 
-    def __init__(self, status_bar: widgets.QStatusBar):
+    def __init__(self, main_view: MainView):
         super().__init__()
-        self._status_bar = status_bar
+        self._main_view = main_view
         self._fortschritts_balken = widgets.QProgressBar()
         self._teilnehmer_status = []
         self._arena_view = None
@@ -273,6 +343,10 @@ class WettkampfView(widgets.QWidget):
 
         self._timer = core.QTimer()
         self._timer.timeout.connect(self._aktualisiere_view)
+
+    @property
+    def wettkampf(self):
+        return self._wettkampf
 
     def starte_wettkampf(self, arena_groesse: (int, int), algorithmen: Iterable[Type[Algorithmus]]):
         arena_definition = ArenaDefinition(*arena_groesse)
@@ -288,12 +362,14 @@ class WettkampfView(widgets.QWidget):
         widget = self._layout.takeAt(0)
         while widget:
             # FIXME
-            widget.deleteLater()
+            if isinstance(widget, widgets.QWidget):
+                widget.deleteLater()
+            widget = self._layout.takeAt(0)
 
         self._fortschritts_balken.setRange(0, self._wettkampf.anzahl_zuege)
         self._fortschritts_balken.setValue(0)
         self._fortschritts_balken.setFormat("Züge %v/{}".format(self._wettkampf.anzahl_zuege))
-        self._status_bar.addPermanentWidget(self._fortschritts_balken, stretch=1)
+        self._main_view.zeige_status_widget(self._fortschritts_balken, stretch=1)
 
         teilnehmer_container = widgets.QWidget()
         teilnehmer_layout = widgets.QHBoxLayout()
@@ -308,25 +384,22 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(self._arena_view)
 
     def _aktualisiere_view(self):
+        if not self._wettkampf.laeuft_noch:
+            self._timer.stop()
+            self._wettkampf.berechne_punkte_neu()
+            self._main_view.clear_status_bar()
+            self._main_view.wettkampf_beendet()
+
         self._fortschritts_balken.setValue(self._wettkampf.aktueller_zug)
         self._arena_view.aktualisiere_view()
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view()
 
-        if not self._wettkampf.laeuft_noch:
-            self._timer.stop()
-            self._wettkampf.berechne_punkte_neu()
-            self._fortschritts_balken.setValue(self._wettkampf.aktueller_zug)
-            for teilnehmer_status in self._teilnehmer_status:
-                teilnehmer_status.aktualisiere_view()
-            self._arena_view.aktualisiere_view()
-            # TODO Handle finish
-
 
 class TeilnehmerStatus(widgets.QGroupBox):
 
     def __init__(self, teilnehmer: Teilnehmer, wettkampf: Wettkampf):
-        super().__init__("[{}] {}".format(teilnehmer.nummer + 1, teilnehmer.name))
+        super().__init__("{}".format(teilnehmer))
         self._teilnehmer = teilnehmer
         self._wettkampf = wettkampf
 

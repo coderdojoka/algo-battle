@@ -2,7 +2,7 @@ import util
 import algorithmen.einfach as einfache_algorithmen
 
 from typing import Iterable
-from framework.wettkampf import Wettkampf, ArenaDefinition
+from framework.wettkampf import Wettkampf, ArenaDefinition, EventStatistiken
 
 
 # TODO Default values and fallback algorithm module in config
@@ -22,7 +22,7 @@ def run_cli(module: Iterable[str] = None):
     arena_groesse = util.input.lese_arena_groesse("Arena Größe", (100, 100))
     arena_definition = ArenaDefinition(*arena_groesse)
 
-    statistiken = util.EventStatistiken()
+    statistiken = EventStatistiken()
     for runde in range(anzahl_runden):
         wettkampf = Wettkampf(arena_definition.punkte_maximum, arena_definition, [algorithmus() for algorithmus in algorithmen])
 
@@ -30,7 +30,7 @@ def run_cli(module: Iterable[str] = None):
         wettkampf.start()
         wettkampf.warte_auf_ende()
         wettkampf.berechne_punkte_neu()
-        statistiken.speicher_runde(runde, wettkampf)
+        statistiken.speicher_runde(wettkampf)
         print(util.wettkampf_ergebnis(wettkampf))
         print("Speichere Bild für Runde {}".format(runde + 1))
         util.speichere_arena_bild(runde, wettkampf)
