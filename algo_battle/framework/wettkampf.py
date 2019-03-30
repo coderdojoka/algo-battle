@@ -2,9 +2,9 @@ import time
 import numpy as np
 import random
 
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 from threading import Thread, RLock
-from framework.domain import ArenaDefinition, FeldZustand
+from framework.domain import ArenaDefinition, FeldZustand, Richtung
 from framework.algorithm import Algorithmus
 
 _zug_pause_default = 0.0002
@@ -63,8 +63,9 @@ class Wettkampf:
         return self._teilnehmer
 
     @property
-    def arena_snapshot(self) -> np.ndarray:
-        return self._arena.snapshot
+    def wettkampf_snapshot(self) -> Tuple[np.ndarray, List["TeilnehmerSnapshot"]]:
+        teilnehmer_snapshots = [tn.snapshot for tn in self._teilnehmer]
+        return self._arena.snapshot, teilnehmer_snapshots
 
     @property
     def sieger(self) -> Optional["Teilnehmer"]:
@@ -80,8 +81,11 @@ class Wettkampf:
     def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
         return self._zuege_pro_teilnehmer[teilnehmer]
 
+    def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
+        return self._punkte_pro_teilnehmer[teilnehmer]
+
     def berechne_punkte_neu(self):
-        felder = self.arena_snapshot
+        felder = self._arena.snapshot
         felder_pro_wert = {t.nummer: 0 for t in self.teilnehmer}
         for feld in np.nditer(felder):
             wert = int(feld)
@@ -92,9 +96,6 @@ class Wettkampf:
             nummer = teilnehmer.nummer
             punkte = felder_pro_wert.get(nummer, 0)
             self._punkte_pro_teilnehmer[teilnehmer] = punkte
-
-    def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
-        return self._punkte_pro_teilnehmer[teilnehmer]
 
     @property
     def laeuft_noch(self) -> bool:
@@ -174,6 +175,10 @@ class Teilnehmer:
     def y(self, value: int):
         self._y = value
 
+    @property
+    def snapshot(self) -> "TeilnehmerSnapshot":
+        return TeilnehmerSnapshot(self.nummer, self.x, self.y, self.richtung)
+
     def start(self):
         self._thread = Thread(name=self.name, target=self._run, daemon=True)
         self._algorithmus.arena = self._wettkampf.arena_definition
@@ -209,6 +214,15 @@ class Teilnehmer:
 
     def __str__(self):
         return "[{}] {}".format(self.nummer + 1, self.name)
+
+
+class TeilnehmerSnapshot:
+
+    def __init__(self, nummer: int, x: int, y: int, richtung: Richtung):
+        self.nummer = nummer
+        self.richtung = richtung
+        self.x = x
+        self.y = y
 
 
 class GleichstandDummy(Teilnehmer):
