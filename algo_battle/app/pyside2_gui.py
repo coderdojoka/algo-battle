@@ -8,6 +8,8 @@ import algorithmen.einfach as einfache_algorithmen
 
 from typing import Optional, Iterable, Tuple, Type
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
+
+from framework.domain import Richtung
 from framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition
 from framework.algorithm import Algorithmus
 
@@ -24,7 +26,6 @@ _max_arena_groesse = 300
 _verfuegbare_algorithmen = []
 
 
-# TODO Secondary colors are too strong
 _farben = [
     [gui.QColor(33, 119, 177), gui.QColor(78, 121, 165)],  # Blau
     [gui.QColor(254, 128, 42), gui.QColor(241, 143, 59)],  # Orange
@@ -389,21 +390,18 @@ class ArenaView(widgets.QWidget):
 
         with np.nditer(data, flags=["multi_index"]) as it:
             for field in it:
-                x, y = it.multi_index
-                block_x = self.x_index2block_x(x)
-                block_y = self.y_index2block_y(y)
-
+                block_x, block_y = self._coordinates_to_point(it.multi_index)
                 if field > -1:
                     self._painter.fillRect(block_x, block_y, self._block_breite, self._block_hoehe, _farben[field][1])
 
         self._painter.end()
         self.repaint()
 
-    def y_index2block_y(self, y):
-        return self._gitter_dicke + (self._block_hoehe + self._gitter_dicke) * y
-
-    def x_index2block_x(self, x):
-        return self._gitter_dicke + (self._block_breite + self._gitter_dicke) * x
+    def _coordinates_to_point(self, coordinates: (int, int)) -> (float, float):
+        return (
+            self._gitter_dicke + (self._block_breite + self._gitter_dicke) * coordinates[0],
+            self._gitter_dicke + (self._block_hoehe + self._gitter_dicke) * coordinates[1]
+        )
 
     def paintEvent(self, event: gui.QPaintEvent):
         self._painter.begin(self)
@@ -415,7 +413,8 @@ class ArenaView(widgets.QWidget):
             self._painter.save()
             angle = math.degrees(math.atan2(tn.richtung.dy, tn.richtung.dx))
 
-            self._painter.translate(self.x_index2block_x(tn.x + .5), self.y_index2block_y(tn.y + .5))
+            arrow_x, arrow_y = self._coordinates_to_point((tn.x + 0.5, tn.y + 0.5))
+            self._painter.translate(arrow_x, arrow_y)
             self._painter.rotate(angle)
 
             self._painter.setBrush(gui.QBrush(_farben[tn.nummer][0]))
