@@ -16,7 +16,7 @@ from algo_battle.framework.algorithm import Algorithmus
 
 _font_size = 12
 _initial_width = 900
-_initial_height = 1000
+_initial_height = 900
 
 _min_teilnehmer_anzahl = 2
 _max_teilnehmer_anzahl = 10
@@ -378,7 +378,7 @@ class WettkampfView(widgets.QWidget):
         self._arena_view = None
 
         self._wettkampf = None
-        self._layout = widgets.QVBoxLayout()
+        self._layout = widgets.QHBoxLayout()
         self.setLayout(self._layout)
 
         self._timer = core.QTimer()
@@ -416,16 +416,24 @@ class WettkampfView(widgets.QWidget):
         self._fortschritts_balken.setFormat("Züge %v/{}".format(self._wettkampf.anzahl_zuege))
         self._main_view.zeige_status_widget(self._fortschritts_balken, stretch=1)
 
+        scroll_container = widgets.QScrollArea()
+        scroll_container.setMinimumWidth(200)
+        scroll_container.setContentsMargins(0,0,0,0)
+        scroll_container.setWidgetResizable(True)
+        scroll_container.setHorizontalScrollBarPolicy(core.Qt.ScrollBarAlwaysOff)
+
         teilnehmer_container = widgets.QWidget()
-        teilnehmer_layout = widgets.QHBoxLayout()
+        teilnehmer_layout = widgets.QVBoxLayout()
         teilnehmer_container.setLayout(teilnehmer_layout)
         for teilnehmer in self._wettkampf.teilnehmer:
             teilnehmer_status = TeilnehmerStatus(teilnehmer, self._wettkampf)
             self._teilnehmer_status.append(teilnehmer_status)
             teilnehmer_layout.addWidget(teilnehmer_status)
+        teilnehmer_layout.addItem(widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Expanding))
 
+        scroll_container.setWidget(teilnehmer_container)
         self._arena_view = ArenaView(self._wettkampf, hat_gitter=True)
-        self._layout.addWidget(teilnehmer_container)
+        self._layout.addWidget(scroll_container)
         self._layout.addWidget(self._arena_view)
 
     def _aktualisiere_view(self):
@@ -460,9 +468,10 @@ class TeilnehmerStatus(widgets.QGroupBox):
         self._layout.addRow("Punkte:", self._punkte_anzeige)
         self._layout.addRow("Züge:", self._zuege_anzeige)
         self.setLayout(self._layout)
-        self.setMinimumWidth(125)
+        self.setMinimumWidth(150)
         self.setPalette(gui.QPalette(_farben[teilnehmer.nummer][1].darker(80)))
         self.setAutoFillBackground(True)
+
         self.setStyleSheet("""
             QGroupBox::title {
                 margin-left: 5px;
