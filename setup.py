@@ -6,8 +6,7 @@ install_requires = [
     "numpy>=1.16.2",
     "pandas>=0.24.2",
     "Pillow>=5.4.1",
-    "PySide2>=5.12.2",
-    "PyYAML>=5.1"
+    "PySide2>=5.12.2"
 ]
 
 with open("README.md") as f:

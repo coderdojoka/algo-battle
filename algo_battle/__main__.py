@@ -1,5 +1,4 @@
 import logging.config
-import yaml
 import sys
 
 from algo_battle.app.cli import run_cli
