@@ -123,7 +123,7 @@ class MainView(widgets.QMainWindow):
 
         ergebnis_label = widgets.QLabel(ergebnis_nachricht)
         self.zeige_status_widget(ergebnis_label, stretch=1)
-        spacer_label1 = widgets.QLabel("")  # TODO Check if necessary
+        spacer_label1 = widgets.QLabel("")
         self.zeige_status_widget(spacer_label1, stretch=1)
         self.zeige_status_widget(self._neue_runde_button)
         self.zeige_status_widget(self._speicher_bild_button)
@@ -171,6 +171,7 @@ class MainView(widgets.QMainWindow):
         self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._erstelle_wettkampf))
 
 
+# TODO Add control to set the allowed turns per second (wettkampf sleep time)
 class ErstelleWettkampfView(widgets.QWidget):
 
     def __init__(self, main_view: MainView):
@@ -359,12 +360,13 @@ class WettkampfView(widgets.QWidget):
         self._timer.start()
 
     def _initialisiere_view(self):
-        widget = self._layout.takeAt(0)
-        while widget:
-            # FIXME
-            if isinstance(widget, widgets.QWidget):
+        self._teilnehmer_status.clear()
+        layout_item = self._layout.takeAt(0)
+        while layout_item:
+            widget = layout_item.widget()
+            if widget:
                 widget.deleteLater()
-            widget = self._layout.takeAt(0)
+            layout_item = self._layout.takeAt(0)
 
         self._fortschritts_balken.setRange(0, self._wettkampf.anzahl_zuege)
         self._fortschritts_balken.setValue(0)
