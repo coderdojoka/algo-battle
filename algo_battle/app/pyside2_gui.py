@@ -106,7 +106,11 @@ class MainView(widgets.QMainWindow):
             if not self._algorithmen:
                 self._algorithmen = [algorithmus if algorithmus else random.choice(_verfuegbare_algorithmen)
                                      for algorithmus in self._erstelle_wettkampf.algorithmen]
-            self._wettkampf_view.starte_wettkampf(self._erstelle_wettkampf.arena_groesse, self._algorithmen)
+            self._wettkampf_view.starte_wettkampf(
+                self._erstelle_wettkampf.arena_groesse,
+                self._algorithmen,
+                self._erstelle_wettkampf.zuege_pro_sekunde
+            )
             self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._wettkampf_view))
 
     def wettkampf_beendet(self):
@@ -179,7 +183,6 @@ class MainView(widgets.QMainWindow):
         self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._erstelle_wettkampf))
 
 
-# TODO Add control to set the allowed turns per second (wettkampf sleep time)
 class ErstelleWettkampfView(widgets.QWidget):
 
     def __init__(self, main_view: MainView):
@@ -190,10 +193,6 @@ class ErstelleWettkampfView(widgets.QWidget):
         self._anzahl_teilnehmer.setFixedWidth(100)
         self._anzahl_teilnehmer.setValidator(gui.QIntValidator(_min_teilnehmer_anzahl, _max_teilnehmer_anzahl))
         self._anzahl_teilnehmer.textChanged.connect(self._teilnehmer_anzahl_geaendert)
-
-        self._algorithmen = []
-        self._algorithmus_label = []
-        self._algorithmus_felder = []
 
         self._arena_breite = widgets.QLineEdit("100")
         self._arena_breite.setFixedWidth(50)
@@ -206,23 +205,42 @@ class ErstelleWettkampfView(widgets.QWidget):
         self._arena_hoehe.setValidator(gui.QIntValidator(_min_arena_groesse, _max_arena_groesse))
         self._arena_hoehe.textChanged.connect(self._eingaben_geaendert)
 
+        self._geschwindigkeit = widgets.QComboBox()
+        self._geschwindigkeit.setEditable(False)
+        self._geschwindigkeit.addItem("Echtzeit", 100000)
+        self._geschwindigkeit.addItem("Schnell", 1000)
+        self._geschwindigkeit.addItem("Normal", 500)
+        self._geschwindigkeit.addItem("Langsam", 250)
+        self._geschwindigkeit.addItem("Sehr Langsam", 100)
+        self._geschwindigkeit.setCurrentText("Normal")
+
+        self._algorithmen = []
+        self._algorithmus_label = []
+        self._algorithmus_felder = []
+
         self._start_knopf = widgets.QPushButton("Start")
         self._start_knopf.setFixedWidth(200)
         self._start_knopf_spacer = widgets.QSpacerItem(1, 20)
-        self._bottom_spacer = widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Expanding, widgets.QSizePolicy.Expanding)
+        self._bottom_spacer = widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Expanding)
 
         self._layout = widgets.QGridLayout()
         self.setLayout(self._layout)
 
-        self._layout.setColumnStretch(0, 1)
-        self._layout.addWidget(widgets.QLabel("Anzahl Teilnehmer"), 0, 0, core.Qt.AlignRight)
-        self._layout.addWidget(self._anzahl_teilnehmer, 0, 1, core.Qt.AlignLeft)
-        self._layout.addItem(widgets.QSpacerItem(20, 1), 0, 2)
-        self._layout.addWidget(widgets.QLabel("Arena Größe"), 0, 3)
-        self._layout.addWidget(self._arena_breite, 0, 4)
-        self._layout.addWidget(widgets.QLabel("x"), 0, 5)
-        self._layout.addWidget(self._arena_hoehe, 0, 6, core.Qt.AlignLeft)
-        self._layout.setColumnStretch(6, 1)
+        self._layout.addItem(widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Expanding, widgets.QSizePolicy.Minimum), 0, self._layout.columnCount())
+        self._layout.addWidget(widgets.QLabel("Anzahl Teilnehmer"), 0, self._layout.columnCount(), core.Qt.AlignRight)
+        self._layout.addWidget(self._anzahl_teilnehmer, 0, self._layout.columnCount(), core.Qt.AlignLeft)
+        self._layout.addItem(widgets.QSpacerItem(20, 1), 0, self._layout.columnCount())
+
+        self._layout.addWidget(widgets.QLabel("Arena Größe"), 0, self._layout.columnCount())
+        self._layout.addWidget(self._arena_breite, 0, self._layout.columnCount())
+        self._layout.addWidget(widgets.QLabel("x"), 0, self._layout.columnCount())
+        self._layout.addWidget(self._arena_hoehe, 0, self._layout.columnCount())
+        self._layout.addItem(widgets.QSpacerItem(20, 1), 0, self._layout.columnCount())
+
+        self._layout.addWidget(widgets.QLabel("Geschwindigkeit"), 0, self._layout.columnCount())
+        self._layout.addWidget(self._geschwindigkeit, 0, self._layout.columnCount(), core.Qt.AlignLeft)
+        self._layout.addItem(widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Expanding, widgets.QSizePolicy.Minimum), 0, self._layout.columnCount())
+
         self._layout.addItem(widgets.QSpacerItem(1, 10), 1, 0)
 
         self._teilnehmer_anzahl_geaendert()
@@ -242,6 +260,10 @@ class ErstelleWettkampfView(widgets.QWidget):
         if not self._arena_groesse_valid:
             return None
         return int(self._arena_breite.text()), int(self._arena_hoehe.text())
+
+    @property
+    def zuege_pro_sekunde(self) -> int:
+        return self._geschwindigkeit.currentData()
 
     @property
     def algorithmen(self) -> Iterable[Optional[Type[Algorithmus]]]:
@@ -301,12 +323,18 @@ class ErstelleWettkampfView(widgets.QWidget):
                 algorithmus_feld.setCurrentIndex(vorher_ausgewaehlt)
             self._algorithmus_felder.append(algorithmus_feld)
 
-            label = self._erstelle_algorithmus_label(index)
-            self._algorithmus_label.append(label)
+            teilnehmer_farbe = TeilnehmerFarbe(index)
+            teilnehmer_label = widgets.QLabel("Teilnehmer {}".format(index + 1))
+            self._algorithmus_label.append(teilnehmer_farbe)
+            self._algorithmus_label.append(teilnehmer_label)
+
+            algorithmus_auswahl = widgets.QHBoxLayout()
+            algorithmus_auswahl.addWidget(teilnehmer_farbe)
+            algorithmus_auswahl.addWidget(teilnehmer_label)
+            algorithmus_auswahl.addWidget(algorithmus_feld)
 
             reihe = self._layout.rowCount() + 1
-            self._layout.addWidget(label, reihe, 0, core.Qt.AlignRight)
-            self._layout.addWidget(algorithmus_feld, reihe, 1, 1, -1, core.Qt.AlignLeft)
+            self._layout.addLayout(algorithmus_auswahl, reihe, 0, 1, -1, core.Qt.AlignHCenter)
 
         self._layout.addItem(self._start_knopf_spacer, reihe + 1, 0)
         self._layout.addWidget(self._start_knopf, reihe + 2, 0, 1, -1, core.Qt.AlignHCenter)
@@ -342,6 +370,9 @@ class WettkampfView(widgets.QWidget):
     def __init__(self, main_view: MainView):
         super().__init__()
         self._main_view = main_view
+        self._aktueller_zug = 0
+        self._zuege_pro_sekunde = 1
+        # TODO Change progress bar to timeline and controls (like a video player)?
         self._fortschritts_balken = widgets.QProgressBar()
         self._teilnehmer_status = []
         self._arena_view = None
@@ -352,19 +383,22 @@ class WettkampfView(widgets.QWidget):
 
         self._timer = core.QTimer()
         self._timer.timeout.connect(self._aktualisiere_view)
+        self._elapsed_timer = core.QElapsedTimer()
 
     @property
     def wettkampf(self):
         return self._wettkampf
 
-    def starte_wettkampf(self, arena_groesse: (int, int), algorithmen: Iterable[Type[Algorithmus]]):
+    def starte_wettkampf(self, arena_groesse: (int, int), algorithmen: Iterable[Type[Algorithmus]], zuege_pro_sekunde: int):
         arena_definition = ArenaDefinition(*arena_groesse)
         self._wettkampf = Wettkampf(
             arena_definition.punkte_maximum, arena_definition,
             [algorithmus() for algorithmus in algorithmen]
         )
+        self._zuege_pro_sekunde = zuege_pro_sekunde
         self._initialisiere_view()
         self._wettkampf.start()
+        self._elapsed_timer.start()
         self._timer.start()
 
     def _initialisiere_view(self):
@@ -376,8 +410,9 @@ class WettkampfView(widgets.QWidget):
                 widget.deleteLater()
             layout_item = self._layout.takeAt(0)
 
+        self._aktueller_zug = 0
         self._fortschritts_balken.setRange(0, self._wettkampf.anzahl_zuege)
-        self._fortschritts_balken.setValue(0)
+        self._fortschritts_balken.setValue(self._aktueller_zug)
         self._fortschritts_balken.setFormat("Züge %v/{}".format(self._wettkampf.anzahl_zuege))
         self._main_view.zeige_status_widget(self._fortschritts_balken, stretch=1)
 
@@ -394,16 +429,20 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(self._arena_view)
 
     def _aktualisiere_view(self):
-        if not self._wettkampf.laeuft_noch:
+        if self._aktueller_zug >= self._wettkampf.anzahl_zuege:
+            self._elapsed_timer.invalidate()
             self._timer.stop()
             self._wettkampf.berechne_punkte_neu()
             self._main_view.clear_status_bar()
             self._main_view.wettkampf_beendet()
 
-        self._fortschritts_balken.setValue(self._wettkampf.aktueller_zug)
-        self._arena_view.aktualisiere_view()
+        self._fortschritts_balken.setValue(self._aktueller_zug)
+        self._arena_view.aktualisiere_view(self._aktueller_zug)
         for teilnehmer_status in self._teilnehmer_status:
-            teilnehmer_status.aktualisiere_view()
+            teilnehmer_status.aktualisiere_view(self._aktueller_zug)
+
+        elapsed_seconds = self._elapsed_timer.elapsed() / 1000
+        self._aktueller_zug = min(int(elapsed_seconds * self._zuege_pro_sekunde), self._wettkampf.aktueller_zug)
 
 
 class TeilnehmerStatus(widgets.QGroupBox):
@@ -430,21 +469,12 @@ class TeilnehmerStatus(widgets.QGroupBox):
             }
         """)
 
-    def aktualisiere_view(self):
-        punkte_text = str(self._wettkampf.punkte_von(self._teilnehmer))
+    def aktualisiere_view(self, aktueller_zug: int):
+        punkte_text = str(self._wettkampf.punkte_von(self._teilnehmer, bis_zug=aktueller_zug))
         self._punkte_anzeige.setText(punkte_text)
 
-        zuege_text = str(self._wettkampf.zuege_von(self._teilnehmer))
+        zuege_text = str(self._wettkampf.zuege_von(self._teilnehmer, bis_zug=aktueller_zug))
         self._zuege_anzeige.setText(zuege_text)
-
-
-class TeilnehmerFarbe(widgets.QLabel):
-
-    def __init__(self, teilnehmer_nummer: int, hoehe=15, breite=15):
-        super().__init__()
-        pixmap = gui.QPixmap(hoehe, breite)
-        pixmap.fill(_farben[teilnehmer_nummer][0])
-        self.setPixmap(pixmap)
 
 
 class ArenaView(widgets.QWidget):
@@ -501,8 +531,8 @@ class ArenaView(widgets.QWidget):
 
         self._painter.end()
 
-    def aktualisiere_view(self):
-        data, self._teilnehmer_snapshots = self._wettkampf.wettkampf_snapshot
+    def aktualisiere_view(self, aktueller_zug: int):
+        data, self._teilnehmer_snapshots = self._wettkampf.wettkampf_snapshot(bis_zug=aktueller_zug)
         self._painter.begin(self._pixmap)
 
         with np.nditer(data, flags=["multi_index"]) as it:
@@ -606,3 +636,12 @@ class EventStatistikView(widgets.QWidget):
         if font_weight:
             label.setStyleSheet("font-weight: {};".format(font_weight))
         return label
+
+
+class TeilnehmerFarbe(widgets.QLabel):
+
+    def __init__(self, teilnehmer_nummer: int, hoehe=15, breite=15):
+        super().__init__()
+        pixmap = gui.QPixmap(hoehe, breite)
+        pixmap.fill(_farben[teilnehmer_nummer][0])
+        self.setPixmap(pixmap)

@@ -22,6 +22,7 @@ class Wettkampf:
         self._teilnehmer = [
             Teilnehmer(nummer, algorithmus, self, zug_pause) for nummer, algorithmus in enumerate(algorithmen)
         ]
+        self._aufzeichnung = []
         self._zuege_pro_teilnehmer = {teilnehmer: 0 for teilnehmer in self._teilnehmer}
         self._punkte_pro_teilnehmer = {teilnehmer: 0 for teilnehmer in self._teilnehmer}
 
@@ -41,6 +42,7 @@ class Wettkampf:
                 teilnehmer.x = random.randrange(0, self.arena_definition.breite)
                 teilnehmer.y = random.randrange(0, self.arena_definition.hoehe)
                 teilnehmer.start()
+                self._aufzeichnung.append(ZugSnapshot(teilnehmer, False))
 
     def warte_auf_ende(self):
         for teilnehmer in self._teilnehmer:
@@ -63,10 +65,19 @@ class Wettkampf:
     def teilnehmer(self) -> List["Teilnehmer"]:
         return self._teilnehmer
 
-    @property
-    def wettkampf_snapshot(self) -> Tuple[np.ndarray, List["TeilnehmerSnapshot"]]:
-        teilnehmer_snapshots = [tn.snapshot for tn in self._teilnehmer]
-        return self._arena.snapshot, teilnehmer_snapshots
+    def wettkampf_snapshot(self, bis_zug: int = None) -> Tuple[np.ndarray, List["TeilnehmerSnapshot"]]:
+        if bis_zug is None or bis_zug < 0 or bis_zug > self.aktueller_zug:
+            teilnehmer_snapshots = [tn.snapshot for tn in self._teilnehmer]
+            return self._arena.snapshot, teilnehmer_snapshots
+
+        anzahl_teilnehmer = len(self._teilnehmer)
+        teilnehmer_snapshots = [zug.teilnehmer_snapshot for zug in self._aufzeichnung[:anzahl_teilnehmer]]
+        arena_snapshot = np.full(self.arena_definition.form, -1)
+        for zug_snapshot in self._aufzeichnung[anzahl_teilnehmer:anzahl_teilnehmer + bis_zug]:
+            teilnehmer_snapshots[zug_snapshot.teilnehmer_nummer] = zug_snapshot.teilnehmer_snapshot
+            if zug_snapshot.gab_punkt:
+                arena_snapshot[zug_snapshot.x, zug_snapshot.y] = zug_snapshot.teilnehmer_nummer
+        return arena_snapshot, teilnehmer_snapshots
 
     @property
     def sieger(self) -> Optional["Teilnehmer"]:
@@ -79,11 +90,27 @@ class Wettkampf:
         else:
             return max(self._punkte_pro_teilnehmer.keys(), key=lambda t: self._punkte_pro_teilnehmer[t])
 
-    def zuege_von(self, teilnehmer: "Teilnehmer") -> int:
-        return self._zuege_pro_teilnehmer[teilnehmer]
+    def zuege_von(self, teilnehmer: "Teilnehmer", bis_zug: int = None) -> int:
+        if bis_zug is None or bis_zug < 0 or bis_zug > self.aktueller_zug:
+            return self._zuege_pro_teilnehmer[teilnehmer]
 
-    def punkte_von(self, teilnehmer: "Teilnehmer") -> int:
-        return self._punkte_pro_teilnehmer[teilnehmer]
+        anzahl_teilnehmer = len(self._teilnehmer)
+        zuege = 0
+        for zug_snapshot in self._aufzeichnung[anzahl_teilnehmer:anzahl_teilnehmer + bis_zug]:
+            if zug_snapshot.teilnehmer_nummer == teilnehmer.nummer:
+                zuege += 1
+        return zuege
+
+    def punkte_von(self, teilnehmer: "Teilnehmer", bis_zug: int = None) -> int:
+        if bis_zug is None or bis_zug < 0 or bis_zug > self.aktueller_zug:
+            return self._punkte_pro_teilnehmer[teilnehmer]
+
+        anzahl_teilnehmer = len(self._teilnehmer)
+        punkte = 0
+        for zug_snapshot in self._aufzeichnung[anzahl_teilnehmer:anzahl_teilnehmer + bis_zug]:
+            if zug_snapshot.gab_punkt and zug_snapshot.teilnehmer_nummer == teilnehmer.nummer:
+                punkte += 1
+        return punkte
 
     def berechne_punkte_neu(self):
         felder = self._arena.snapshot
@@ -102,8 +129,6 @@ class Wettkampf:
     def laeuft_noch(self) -> bool:
         return self.aktueller_zug < self.anzahl_zuege
 
-    # ------------- Geschützter Bereich -----------------------------------------------------------
-
     @property
     def zug_berechtigung(self) -> RLock:
         return self._zug_berechtigung
@@ -116,6 +141,7 @@ class Wettkampf:
             x_neu = teilnehmer.x + teilnehmer.richtung.dx
             y_neu = teilnehmer.y + teilnehmer.richtung.dy
 
+            gab_punkt = False
             zustand = self._arena.gib_zustand(x_neu, y_neu, teilnehmer)
             if zustand.ist_betretbar:
                 teilnehmer.x = x_neu
@@ -123,13 +149,44 @@ class Wettkampf:
                 if zustand is FeldZustand.Frei:
                     self._arena.setze_feld(teilnehmer)
                     self._punkte_pro_teilnehmer[teilnehmer] += 1
+                    gab_punkt = True
 
+            self._aufzeichnung.append(ZugSnapshot(teilnehmer, gab_punkt))
             self._aktueller_zug += 1
             self._zuege_pro_teilnehmer[teilnehmer] += 1
 
             return zustand
 
-    # ---------------------------------------------------------------------------------------------
+
+class ZugSnapshot:
+
+    def __init__(self, teilnehmer: "Teilnehmer", gab_punkt: bool):
+        self._teilnehmer_snapshot = teilnehmer.snapshot
+        self._gab_punkt = gab_punkt
+
+    @property
+    def teilnehmer_snapshot(self) -> "TeilnehmerSnapshot":
+        return self._teilnehmer_snapshot
+
+    @property
+    def teilnehmer_nummer(self) -> int:
+        return self._teilnehmer_snapshot.nummer
+
+    @property
+    def teilnehmer_richtung(self) -> Richtung:
+        return self._teilnehmer_snapshot.richtung
+
+    @property
+    def x(self) -> int:
+        return self._teilnehmer_snapshot.x
+
+    @property
+    def y(self) -> int:
+        return self._teilnehmer_snapshot.y
+
+    @property
+    def gab_punkt(self) -> bool:
+        return self._gab_punkt
 
 
 class Teilnehmer:
@@ -220,10 +277,26 @@ class Teilnehmer:
 class TeilnehmerSnapshot:
 
     def __init__(self, nummer: int, x: int, y: int, richtung: Richtung):
-        self.nummer = nummer
-        self.richtung = richtung
-        self.x = x
-        self.y = y
+        self._nummer = nummer
+        self._richtung = richtung
+        self._x = x
+        self._y = y
+
+    @property
+    def nummer(self) -> int:
+        return self._nummer
+
+    @property
+    def richtung(self) -> Richtung:
+        return self._richtung
+
+    @property
+    def x(self) -> int:
+        return self._x
+
+    @property
+    def y(self) -> int:
+        return self._y
 
 
 class GleichstandDummy(Teilnehmer):
