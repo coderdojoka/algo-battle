@@ -213,6 +213,12 @@ class ErstelleWettkampfView(widgets.QWidget):
         self._geschwindigkeit.addItem("Langsam", 250)
         self._geschwindigkeit.addItem("Sehr Langsam", 100)
         self._geschwindigkeit.setCurrentText("Normal")
+        for index in range(self._geschwindigkeit.count()):
+            zuege_pro_sekunde = self._geschwindigkeit.itemData(index)
+            tooltip = "{} Züge pro Sekunde".format(
+                zuege_pro_sekunde if self._geschwindigkeit.itemText(index) != "Echtzeit" else "∞"
+            )
+            self._geschwindigkeit.setItemData(index, tooltip, core.Qt.ToolTipRole)
 
         self._algorithmen = []
         self._algorithmus_label = []
