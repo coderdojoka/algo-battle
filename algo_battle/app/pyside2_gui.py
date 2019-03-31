@@ -6,7 +6,7 @@ import random
 import numpy as np
 import algorithmen.einfach as einfache_algorithmen
 
-from typing import Optional, Iterable, Tuple, Type
+from typing import Optional, Iterable, Tuple, Type, Union
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
 from framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken
@@ -72,7 +72,6 @@ class MainView(widgets.QMainWindow):
         self._toolbar.setMovable(False)
         self._status_bar = widgets.QStatusBar()
         self._status_bar_widgets = []
-        self._status_bar.showMessage("Hello World")
         self._toolbar.addWidget(self._status_bar)
 
         self._erstelle_wettkampf = ErstelleWettkampfView(self)
@@ -90,7 +89,6 @@ class MainView(widgets.QMainWindow):
         self._speicher_bild_button.setDisabled(True)
         self._zeige_statistiken_button = widgets.QPushButton("Statistiken")
         self._zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
-        self._zeige_statistiken_button.setDisabled(True)
         self._neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
         self._neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
 
@@ -122,7 +120,7 @@ class MainView(widgets.QMainWindow):
             ergebnis_nachricht = "Teilnehmer {} gewinnt!".format(sieger)
 
         ergebnis_label = widgets.QLabel(ergebnis_nachricht)
-        self.zeige_status_widget(ergebnis_label, stretch=1)
+        self.zeige_status_widget(ergebnis_label)
         spacer_label1 = widgets.QLabel("")
         self.zeige_status_widget(spacer_label1, stretch=1)
         self.zeige_status_widget(self._neue_runde_button)
@@ -157,11 +155,12 @@ class MainView(widgets.QMainWindow):
 
     def _zeige_event_statistiken(self):
         dialog = widgets.QDialog()
+        dialog.setWindowTitle("Statistiken")
+        dialog.setWindowFlags(dialog.windowFlags() & ~core.Qt.WindowContextHelpButtonHint)
         dialog_layout = widgets.QVBoxLayout()
         dialog.setLayout(dialog_layout)
-
-        # TODO
-
+        dialog_layout.addWidget(EventStatistikView(self._statistiken))
+        dialog.layout().setSizeConstraint(widgets.QLayout.SetFixedSize)
         dialog.exec_()
 
     def _neuer_wettkampf(self):
@@ -531,3 +530,70 @@ class ArenaView(widgets.QWidget):
             self._painter.restore()
 
         self._painter.end()
+
+
+class EventStatistikView(widgets.QWidget):
+
+    def __init__(self, statistiken: EventStatistiken):
+        super().__init__()
+        self._layout = widgets.QGridLayout()
+        self.setLayout(self._layout)
+
+        teilnehmer = statistiken.daten.columns.droplevel("Statistik").unique().to_list()
+        statistik_namen = ["Punkte", "Züge"]
+        teilnehmer_span = len(statistik_namen)
+        runden = sorted(statistiken.daten.index)
+
+        # Tabellen-Kopf
+        for j, tn in enumerate(teilnehmer):
+            teilnehmer_label = self._erzeuge_teilnehmer_label(tn, "bold")
+            self._layout.addLayout(teilnehmer_label, 0, 1 + j * teilnehmer_span, 1, teilnehmer_span, core.Qt.AlignCenter)
+            for k, statistik_name in enumerate(statistik_namen):
+                self._layout.addWidget(self._erzeuge_label(statistik_name), 1, 1 + j * teilnehmer_span + k, core.Qt.AlignCenter)
+        self._layout.addWidget(self._erzeuge_label("Sieger", "bold"), 0, 1 + len(teilnehmer) * teilnehmer_span + 1, 2, 1, core.Qt.AlignBottom | core.Qt.AlignLeft)
+
+        # Werte der Runden
+        for i, runde in enumerate(runden):
+            self._layout.addWidget(self._erzeuge_label("Runde {}".format(runde + 1), "bold"), 2 + runde, 0, core.Qt.AlignRight)
+            runden_sieger = statistiken.sieger_von_runde(runde)
+            for j, (nummer, name) in enumerate(teilnehmer):
+                for k, statistik_name in enumerate(statistik_namen):
+                    wert = statistiken.daten.loc[runde, (nummer, name, statistik_name)]
+                    werte_label = self._erzeuge_label(wert, "bold" if runden_sieger[0] == nummer and statistik_name == "Punkte" else None)
+                    self._layout.addWidget(werte_label, 2 + i, 1 + j * teilnehmer_span + k, core.Qt.AlignCenter)
+            sieger_label = self._erzeuge_teilnehmer_label(runden_sieger)
+            self._layout.addLayout(sieger_label, 2 + i, 1 + len(teilnehmer) * teilnehmer_span + 1, core.Qt.AlignLeft)
+
+        # Durchschnitte aller Runden
+        letzte_zeile = self._layout.rowCount()
+        self._layout.addWidget(self._erzeuge_label("Durchschnitt", "bold"), letzte_zeile, 0, core.Qt.AlignRight)
+        punkte_durchschnitt = statistiken.punkte_durchschnitt.round()
+        punkte_durchschnitt_max_tn = punkte_durchschnitt.idxmax()
+        zuege_durchschnitt = statistiken.zuege_durchschnitt.round()
+        for j, tn in enumerate(teilnehmer):
+            punkte_weight = "bold" if tn == punkte_durchschnitt_max_tn else None
+            self._layout.addWidget(self._erzeuge_label(int(punkte_durchschnitt[tn]), punkte_weight), letzte_zeile, 1 + j * teilnehmer_span, core.Qt.AlignCenter)
+            self._layout.addWidget(self._erzeuge_label(int(zuege_durchschnitt[tn])), letzte_zeile, 1 + j * teilnehmer_span + 1, core.Qt.AlignCenter)
+
+        # Sieger Nachricht
+        self._layout.addItem(widgets.QSpacerItem(1, 10), self._layout.rowCount(), 0)
+        sieger_nachricht = self._erzeuge_label(statistiken.sieger_nachricht, "bold")
+        self._layout.addWidget(sieger_nachricht, self._layout.rowCount(), 0, 1, self._layout.columnCount() + 1, core.Qt.AlignCenter)
+
+        # Layout Details
+        for c in range(1, 1 + len(teilnehmer) * teilnehmer_span):
+            self._layout.setColumnMinimumWidth(c, 70)
+        bottom_spacer = widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Expanding)
+        self._layout.addItem(bottom_spacer, self._layout.rowCount(), 0)
+
+    def _erzeuge_teilnehmer_label(self, teilnehmer: (int, str), font_weight: Union[int, str] = None) -> widgets.QLayout:
+        layout = widgets.QHBoxLayout()
+        layout.addWidget(TeilnehmerFarbe(teilnehmer[0] - 1))
+        layout.addWidget(self._erzeuge_label("[{}] {}".format(*teilnehmer), font_weight))
+        return layout
+
+    def _erzeuge_label(self, text, font_weight: Union[int, str] = None):
+        label = widgets.QLabel(str(text))
+        if font_weight:
+            label.setStyleSheet("font-weight: {};".format(font_weight))
+        return label
