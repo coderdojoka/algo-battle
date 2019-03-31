@@ -26,7 +26,7 @@ setup(
     },
     install_requires=install_requires,
     python_requires=">=3.5",
-    packages=find_packages(),
+    packages=find_packages(exclude=["test"]),
     zip_safe=False,
     classifiers=[
         "Development Status :: 3 - Alpha",
