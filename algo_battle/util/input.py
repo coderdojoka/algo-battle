@@ -3,7 +3,7 @@ import random
 
 from importlib import import_module
 from typing import Sequence, Type
-from framework.algorithm import Algorithmus
+from algo_battle.framework.algorithm import Algorithmus
 
 
 def lese_zahl(text: str, default: int = None) -> int:

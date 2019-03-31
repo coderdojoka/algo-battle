@@ -2,16 +2,8 @@ import logging.config
 import yaml
 import sys
 
-from app.cli import run_cli
-from app.pyside2_gui import start_gui
-
-# TODO Publish as module
-
-# TODO Only algorithm loggers should log the thread name
-# TODO Check if file exists
-with open("config/logging_config.yml") as f:
-    logging.config.dictConfig(yaml.load(f, Loader=yaml.FullLoader))
-
+from algo_battle.app.cli import run_cli
+from algo_battle.app.pyside2_gui import start_gui
 
 if __name__ == "__main__":
     logger = logging.getLogger("Main")

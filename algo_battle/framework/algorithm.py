@@ -1,7 +1,7 @@
 import logging
 
 from abc import ABC, abstractmethod
-from framework.domain import Richtung, ArenaDefinition, FeldZustand
+from algo_battle.framework.domain import Richtung, ArenaDefinition, FeldZustand
 
 
 class Algorithmus(ABC):

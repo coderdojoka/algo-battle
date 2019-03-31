@@ -1,14 +1,12 @@
 import time
-import numpy as np
 import random
+import numpy as np
+import pandas as pd
 
 from typing import Iterable, List, Optional, Tuple
 from threading import Thread, RLock
-
-import pandas as pd
-
-from framework.domain import ArenaDefinition, FeldZustand, Richtung
-from framework.algorithm import Algorithmus
+from algo_battle.framework.domain import ArenaDefinition, FeldZustand, Richtung
+from algo_battle.framework.algorithm import Algorithmus
 
 _zug_pause_default = 0.0002
 

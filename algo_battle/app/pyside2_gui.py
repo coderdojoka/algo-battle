@@ -2,16 +2,16 @@ import os
 import logging
 import math
 import sys
-import util
 import random
 import numpy as np
-import algorithmen.einfach as einfache_algorithmen
+import algo_battle.util
+import algo_battle.algorithmen.einfach as einfache_algorithmen
 
 from typing import Optional, Iterable, Tuple, Type, Union
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
-from framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken
-from framework.algorithm import Algorithmus
+from algo_battle.framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken
+from algo_battle.framework.algorithm import Algorithmus
 
 
 _font_size = 12
@@ -41,10 +41,10 @@ _farben = [
 
 
 def start_gui(module: Iterable[str] = None):
-    _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(einfache_algorithmen))
+    _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen))
     if module:
         for modul_pfad in module:
-            _verfuegbare_algorithmen.extend(util.gib_algorithmen_in_modul(modul_pfad))
+            _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(modul_pfad))
 
     app = widgets.QApplication()
     font = app.font()

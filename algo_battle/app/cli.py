@@ -1,25 +1,25 @@
-import util
-import algorithmen.einfach as einfache_algorithmen
+import algo_battle.util.input
+import algo_battle.algorithmen.einfach as einfache_algorithmen
 
 from typing import Iterable
-from framework.wettkampf import Wettkampf, ArenaDefinition, EventStatistiken
+from algo_battle.framework.wettkampf import Wettkampf, ArenaDefinition, EventStatistiken
 
 
 # TODO Default values and fallback algorithm module in config
 def run_cli(module: Iterable[str] = None):
     print("Algo-Battle")
-    anzahl_runden = util.input.lese_zahl("Anzahl der Runden", 9)
-    anzahl_teilnehmer = util.input.lese_zahl("Anzahl der Teilnehmer", 2)
+    anzahl_runden = algo_battle.util.input.lese_zahl("Anzahl der Runden", 9)
+    anzahl_teilnehmer = algo_battle.util.input.lese_zahl("Anzahl der Teilnehmer", 2)
 
-    fallback_algorithmen = util.gib_algorithmen_in_modul(einfache_algorithmen)
+    fallback_algorithmen = algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen)
     if module:
         for modul_pfad in module:
-            fallback_algorithmen.extend(util.gib_algorithmen_in_modul(modul_pfad))
+            fallback_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(modul_pfad))
     algorithmen = [
-        util.input.lese_algorithmus("Algorithmus {}".format(i + 1), fallback_algorithmen) for i in range(anzahl_teilnehmer)
+        algo_battle.util.input.lese_algorithmus("Algorithmus {}".format(i + 1), fallback_algorithmen) for i in range(anzahl_teilnehmer)
     ]
 
-    arena_groesse = util.input.lese_arena_groesse("Arena Größe", (100, 100))
+    arena_groesse = algo_battle.util.input.lese_arena_groesse("Arena Größe", (100, 100))
     arena_definition = ArenaDefinition(*arena_groesse)
 
     statistiken = EventStatistiken()
@@ -31,12 +31,12 @@ def run_cli(module: Iterable[str] = None):
         wettkampf.warte_auf_ende()
         wettkampf.berechne_punkte_neu()
         statistiken.speicher_runde(wettkampf)
-        print(util.wettkampf_ergebnis(wettkampf))
+        print(algo_battle.util.wettkampf_ergebnis(wettkampf))
         print("Speichere Bild für Runde {}".format(runde + 1))
-        util.speichere_arena_bild(runde, wettkampf)
+        algo_battle.util.speichere_arena_bild(runde, wettkampf)
 
     print("\n")
     print(statistiken.zusammenfassung)
     
     print("\nSpeichere Overlay Bild für alle Runden")
-    util.speichere_overlay_bild(anzahl_runden)
+    algo_battle.util.speichere_overlay_bild(anzahl_runden)

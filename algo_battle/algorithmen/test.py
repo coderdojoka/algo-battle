@@ -1,9 +1,9 @@
 import time
 import random
 
-from framework.algorithm import Algorithmus
-from framework.domain import FeldZustand, Richtung
-from algorithmen.einfach import Zufall
+from algo_battle.framework.algorithm import Algorithmus
+from algo_battle.framework.domain import FeldZustand, Richtung
+from algo_battle.algorithmen.einfach import Zufall
 
 
 class Faultier(Zufall):

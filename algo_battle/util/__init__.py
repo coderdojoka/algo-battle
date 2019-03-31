@@ -5,11 +5,8 @@ import inspect
 
 from typing import Type, List
 from importlib import import_module
-from framework.wettkampf import Wettkampf, Gleichstand
-from framework.algorithm import Algorithmus
-
-# Imports zur Bereitstellung innerer Module
-import util.input
+from algo_battle.framework.wettkampf import Wettkampf, Gleichstand
+from algo_battle.framework.algorithm import Algorithmus
 
 try:
     from PIL import Image, ImageDraw
