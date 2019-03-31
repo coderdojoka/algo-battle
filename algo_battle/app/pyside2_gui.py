@@ -83,7 +83,7 @@ class MainView(widgets.QMainWindow):
         self._algorithmen = []
         self._statistiken = EventStatistiken()
         self._wettkampf_view = WettkampfView(self)
-        self._neue_runde_button = widgets.QPushButton("Neue Runde")
+        self._neue_runde_button = widgets.QPushButton("Nächste Runde")
         self._neue_runde_button.clicked.connect(self._neue_runde)
         self._speicher_bild_button = widgets.QPushButton("Bild speichern")
         self._speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
