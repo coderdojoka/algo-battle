@@ -5,6 +5,8 @@ import sys
 from app.cli import run_cli
 from app.pyside2_gui import start_gui
 
+# TODO Publish as module
+
 # TODO Only algorithm loggers should log the thread name
 # TODO Check if file exists
 with open("config/logging_config.yml") as f:

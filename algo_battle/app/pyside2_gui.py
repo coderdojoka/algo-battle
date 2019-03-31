@@ -1,3 +1,4 @@
+import os
 import logging
 import math
 import sys
@@ -84,9 +85,8 @@ class MainView(widgets.QMainWindow):
         self._wettkampf_view = WettkampfView(self)
         self._neue_runde_button = widgets.QPushButton("Neue Runde")
         self._neue_runde_button.clicked.connect(self._neue_runde)
-        self._speicher_bild_button = widgets.QPushButton("Speicher Bild")
+        self._speicher_bild_button = widgets.QPushButton("Bild speichern")
         self._speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
-        self._speicher_bild_button.setDisabled(True)
         self._zeige_statistiken_button = widgets.QPushButton("Statistiken")
         self._zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
         self._neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
@@ -151,7 +151,16 @@ class MainView(widgets.QMainWindow):
         self.starte_wettkampf()
 
     def _speicher_wettkampf_bild(self):
-        pass  # TODO
+        os.makedirs("Bilder", exist_ok=True)
+        datei_typen = ["png", "jpg", "jpeg"]
+        datei_pfad = widgets.QFileDialog.getSaveFileName(self, "Bild speichern", "Bilder", "Bilder ({})".format(
+            " ".join("*.{}".format(typ) for typ in datei_typen)
+        ))
+        datei_pfad = datei_pfad[0]
+        if datei_pfad:
+            if datei_pfad.lower().split(".")[-1] not in datei_typen:
+                datei_pfad = "{}.png".format(datei_pfad)
+            self._wettkampf_view.grab().save(datei_pfad, quality=95)
 
     def _zeige_event_statistiken(self):
         dialog = widgets.QDialog()

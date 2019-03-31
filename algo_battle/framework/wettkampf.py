@@ -378,12 +378,13 @@ class EventStatistiken:
                 anzahl_siege, "n" if anzahl_siege > 1 else ""
             )
         else:
+            anzahl_runden = self._daten.shape[0]
             sieger_formatiert = ["[{}] {}".format(*t) for t in sieger]
             if len(sieger_formatiert) > 1:
                 sieger_aufzaehlung = " und ".join((", ".join(sieger_formatiert[:-1]), sieger_formatiert[-1]))
             else:
                 sieger_aufzaehlung = sieger_formatiert[-1]
             sieger_nachricht = "Teilnehmer {} gewinn{} mit {} von {} Sieg{}!".format(
-                sieger_aufzaehlung, "en" if len(sieger) > 1 else "t", anzahl_siege, self._daten.shape[0], "en" if anzahl_siege > 1 else ""
+                sieger_aufzaehlung, "en" if len(sieger) > 1 else "t", anzahl_siege, anzahl_runden, "en" if anzahl_runden > 1 else ""
             )
         return sieger_nachricht
