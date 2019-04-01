@@ -379,6 +379,10 @@ class EventStatistiken:
     def daten(self) -> pd.DataFrame:
         return self._daten
 
+    @property
+    def anzahl_runden(self) -> int:
+        return self._daten.shape[0]
+
     def speicher_runde(self, wettkampf: Wettkampf, runde=-1):
         sieger = wettkampf.sieger
         rohdaten = {}

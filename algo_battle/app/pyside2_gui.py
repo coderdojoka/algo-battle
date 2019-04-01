@@ -101,7 +101,6 @@ class MainView(widgets.QMainWindow):
         else:
             self.setCentralWidget(self._content_widget)
 
-    # TODO Display number of current round
     def starte_wettkampf(self):
         if self._erstelle_wettkampf.is_valid:
             if not self._algorithmen:
@@ -110,7 +109,8 @@ class MainView(widgets.QMainWindow):
             self._wettkampf_view.starte_wettkampf(
                 self._erstelle_wettkampf.arena_groesse,
                 self._algorithmen,
-                self._erstelle_wettkampf.zuege_pro_sekunde
+                self._erstelle_wettkampf.zuege_pro_sekunde,
+                self._statistiken.anzahl_runden + 1
             )
             self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._wettkampf_view))
 
@@ -395,19 +395,19 @@ class WettkampfView(widgets.QWidget):
     def wettkampf(self):
         return self._wettkampf
 
-    def starte_wettkampf(self, arena_groesse: (int, int), algorithmen: Iterable[Type[Algorithmus]], zuege_pro_sekunde: int):
+    def starte_wettkampf(self, arena_groesse: (int, int), algorithmen: Iterable[Type[Algorithmus]], zuege_pro_sekunde: int, runde: int):
         arena_definition = ArenaDefinition(*arena_groesse)
         self._wettkampf = Wettkampf(
             arena_definition.punkte_maximum, arena_definition,
             [algorithmus() for algorithmus in algorithmen]
         )
         self._zuege_pro_sekunde = zuege_pro_sekunde
-        self._initialisiere_view()
+        self._initialisiere_view(runde)
         self._wettkampf.start()
         self._elapsed_timer.start()
         self._timer.start()
 
-    def _initialisiere_view(self):
+    def _initialisiere_view(self, runde: int):
         self._teilnehmer_status.clear()
         layout_item = self._layout.takeAt(0)
         while layout_item:
@@ -415,6 +415,11 @@ class WettkampfView(widgets.QWidget):
             if widget:
                 widget.deleteLater()
             layout_item = self._layout.takeAt(0)
+
+        runde_label = widgets.QLabel()
+        runde_label.setStyleSheet("font-weight: bold;")
+        runde_label.setText("Runde {}".format(runde))
+        self._main_view.zeige_status_widget(runde_label)
 
         self._aktueller_zug = 0
         self._fortschritts_balken.setRange(0, self._wettkampf.anzahl_zuege)
