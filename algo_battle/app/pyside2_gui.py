@@ -41,10 +41,10 @@ _farben = [
 
 
 def start_gui(module: Iterable[str] = None):
-    _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen))
     if module:
         for modul_pfad in module:
             _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(modul_pfad))
+    _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen))
 
     app = widgets.QApplication()
     font = app.font()
@@ -101,6 +101,7 @@ class MainView(widgets.QMainWindow):
         else:
             self.setCentralWidget(self._content_widget)
 
+    # TODO Display number of current round
     def starte_wettkampf(self):
         if self._erstelle_wettkampf.is_valid:
             if not self._algorithmen:
@@ -451,6 +452,7 @@ class WettkampfView(widgets.QWidget):
 
         self._fortschritts_balken.setValue(self._aktueller_zug)
         self._arena_view.aktualisiere_view(self._aktueller_zug)
+        # TODO Sort teilnehmer status by their points
         for teilnehmer_status in self._teilnehmer_status:
             teilnehmer_status.aktualisiere_view(self._aktueller_zug)
 
