@@ -360,7 +360,6 @@ class ErstelleWettkampfView(widgets.QWidget):
     @staticmethod
     def _ersetelle_algorithmus_feld() -> widgets.QComboBox:
         algorithmus_feld = widgets.QComboBox()
-        algorithmus_feld.setFixedWidth(357)
         algorithmus_feld.setEditable(False)
         algorithmus_feld.addItem("zufälliger Algorithmus", None)
         for algorithmus in _verfuegbare_algorithmen:

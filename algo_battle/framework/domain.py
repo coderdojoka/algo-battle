@@ -1,6 +1,6 @@
 import random
 
-from typing import Tuple
+from typing import Tuple, Union, Iterable
 from enum import Enum, unique
 
 
@@ -75,7 +75,8 @@ class Richtung(Enum):
     def ist_vertikal(self):
         return not self.ist_horizontal
 
-    def umdrehen(self):
+    @property
+    def gegenteil(self):
         return Richtung((self.dx * -1, self.dy * -1))
 
     def drehe_nach_rechts(self):
@@ -99,9 +100,14 @@ class Richtung(Enum):
             return Richtung.Unten
 
     @staticmethod
-    def zufall(*, ausser: "Richtung" = None) -> "Richtung":
+    def zufall(*, ausser: Union["Richtung", Iterable["Richtung"]] = None) -> "Richtung":
+        if ausser is None:
+            ausser = {}
+        elif isinstance(ausser, Richtung):
+            ausser = {ausser}
+
         richtung = random.choice(_richtungen)
-        while richtung is ausser:
+        while richtung in ausser:
             richtung = random.choice(_richtungen)
         return richtung
 
