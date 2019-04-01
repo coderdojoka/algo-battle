@@ -7,10 +7,10 @@ import numpy as np
 import algo_battle.util
 import algo_battle.algorithmen.einfach as einfache_algorithmen
 
-from typing import Optional, Iterable, Tuple, Type, Union
+from typing import Optional, Iterable, Tuple, Type, Union, List
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
-from algo_battle.framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken
+from algo_battle.framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken, TeilnehmerInfos
 from algo_battle.framework.algorithm import Algorithmus
 
 
@@ -382,6 +382,7 @@ class WettkampfView(widgets.QWidget):
         # TODO Change progress bar to timeline and controls (like a video player)?
         self._fortschritts_balken = widgets.QProgressBar()
         self._teilnehmer_status = []
+        self._teilnehmer_layout = widgets.QVBoxLayout()
         self._arena_view = None
 
         self._wettkampf = None
@@ -409,7 +410,12 @@ class WettkampfView(widgets.QWidget):
         self._timer.start()
 
     def _initialisiere_view(self, runde: int):
+        for teilnehmer_status in self._teilnehmer_status:
+            teilnehmer_status.deleteLater()
+            self._teilnehmer_layout.removeWidget(teilnehmer_status)
         self._teilnehmer_status.clear()
+        self._teilnehmer_layout.takeAt(0)  # Removing the spacer item
+
         layout_item = self._layout.takeAt(0)
         while layout_item:
             widget = layout_item.widget()
@@ -435,13 +441,13 @@ class WettkampfView(widgets.QWidget):
         scroll_container.setHorizontalScrollBarPolicy(core.Qt.ScrollBarAlwaysOff)
 
         teilnehmer_container = widgets.QWidget()
-        teilnehmer_layout = widgets.QVBoxLayout()
-        teilnehmer_container.setLayout(teilnehmer_layout)
+        teilnehmer_container.setLayout(self._teilnehmer_layout)
+        self._teilnehmer_status.extend(None for _ in range(len(self._wettkampf.teilnehmer)))
         for teilnehmer in self._wettkampf.teilnehmer:
-            teilnehmer_status = TeilnehmerStatus(teilnehmer, self._wettkampf)
-            self._teilnehmer_status.append(teilnehmer_status)
-            teilnehmer_layout.addWidget(teilnehmer_status)
-        teilnehmer_layout.addItem(widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Expanding))
+            teilnehmer_status = TeilnehmerStatus(teilnehmer)
+            self._teilnehmer_status[teilnehmer.nummer] = teilnehmer_status
+            self._teilnehmer_layout.addWidget(teilnehmer_status)
+        self._teilnehmer_layout.addItem(widgets.QSpacerItem(1, 1, widgets.QSizePolicy.Minimum, widgets.QSizePolicy.Expanding))
 
         scroll_container.setWidget(teilnehmer_container)
         self._arena_view = ArenaView(self._wettkampf, hat_gitter=True)
@@ -456,23 +462,24 @@ class WettkampfView(widgets.QWidget):
             self._main_view.clear_status_bar()
             self._main_view.wettkampf_beendet()
 
-        self._fortschritts_balken.setValue(self._aktueller_zug)
-        self._arena_view.aktualisiere_view(self._aktueller_zug)
-        # TODO Sort teilnehmer status by their points
-        for teilnehmer_status in self._teilnehmer_status:
-            teilnehmer_status.aktualisiere_view(self._aktueller_zug)
+        arena_data, teilnehmer_infos = self._wettkampf.wettkampf_snapshot(bis_zug=self._aktueller_zug)
+        teilnehmer_infos.sort(key=lambda tn: tn.punkte, reverse=True)
 
+        self._arena_view.aktualisiere_view(arena_data, teilnehmer_infos)
+        for rang, teilnehmer in enumerate(teilnehmer_infos):
+            teilnehmer_status = self._teilnehmer_status[teilnehmer.nummer]
+            teilnehmer_status.aktualisiere_view(teilnehmer)
+            self._teilnehmer_layout.insertWidget(rang, teilnehmer_status)
+
+        self._fortschritts_balken.setValue(self._aktueller_zug)
         elapsed_seconds = self._elapsed_timer.elapsed() / 1000
         self._aktueller_zug = min(int(elapsed_seconds * self._zuege_pro_sekunde), self._wettkampf.aktueller_zug)
 
 
 class TeilnehmerStatus(widgets.QGroupBox):
 
-    def __init__(self, teilnehmer: Teilnehmer, wettkampf: Wettkampf):
+    def __init__(self, teilnehmer: Teilnehmer):
         super().__init__("{}".format(teilnehmer))
-        self._teilnehmer = teilnehmer
-        self._wettkampf = wettkampf
-
         self._punkte_anzeige = widgets.QLabel()
         self._zuege_anzeige = widgets.QLabel()
 
@@ -491,12 +498,9 @@ class TeilnehmerStatus(widgets.QGroupBox):
             }
         """)
 
-    def aktualisiere_view(self, aktueller_zug: int):
-        punkte_text = str(self._wettkampf.punkte_von(self._teilnehmer, bis_zug=aktueller_zug))
-        self._punkte_anzeige.setText(punkte_text)
-
-        zuege_text = str(self._wettkampf.zuege_von(self._teilnehmer, bis_zug=aktueller_zug))
-        self._zuege_anzeige.setText(zuege_text)
+    def aktualisiere_view(self, teilnehmer_infos: TeilnehmerInfos):
+        self._punkte_anzeige.setText(str(teilnehmer_infos.punkte))
+        self._zuege_anzeige.setText(str(teilnehmer_infos.zuege))
 
 
 class ArenaView(widgets.QWidget):
@@ -506,7 +510,7 @@ class ArenaView(widgets.QWidget):
         super().__init__()
         self._wettkampf = wettkampf
 
-        self._teilnehmer_snapshots = []
+        self._teilnehmer_infos = []
         self._painter = gui.QPainter()
         self._gitter_color = gitter_farbe
         self._gitter_dicke = 1 if hat_gitter else 0
@@ -553,11 +557,11 @@ class ArenaView(widgets.QWidget):
 
         self._painter.end()
 
-    def aktualisiere_view(self, aktueller_zug: int):
-        data, self._teilnehmer_snapshots = self._wettkampf.wettkampf_snapshot(bis_zug=aktueller_zug)
+    def aktualisiere_view(self, arena_data: np.ndarray, teilnehmer_infos: List[TeilnehmerInfos]):
+        self._teilnehmer_infos = teilnehmer_infos
         self._painter.begin(self._pixmap)
 
-        with np.nditer(data, flags=["multi_index"]) as it:
+        with np.nditer(arena_data, flags=["multi_index"]) as it:
             for field in it:
                 block_x, block_y = self._coordinates_to_point(it.multi_index)
                 if field > -1:
@@ -577,7 +581,7 @@ class ArenaView(widgets.QWidget):
         self._painter.drawPixmap(0, 0, self._pixmap)
 
         # Position/Richtung hier zeichnen, da der Pfeil sonst nicht überzeichnet wird
-        for tn in self._teilnehmer_snapshots:
+        for tn in self._teilnehmer_infos:
 
             self._painter.save()
             angle = math.degrees(math.atan2(tn.richtung.dy, tn.richtung.dx))

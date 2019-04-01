@@ -8,6 +8,8 @@ from threading import Thread, RLock
 from algo_battle.framework.domain import ArenaDefinition, FeldZustand, Richtung
 from algo_battle.framework.algorithm import Algorithmus
 
+# TODO Cleanup, create file for each class group
+
 _zug_pause_default = 0.0002
 
 
@@ -65,19 +67,24 @@ class Wettkampf:
     def teilnehmer(self) -> List["Teilnehmer"]:
         return self._teilnehmer
 
-    def wettkampf_snapshot(self, bis_zug: int = None) -> Tuple[np.ndarray, List["TeilnehmerSnapshot"]]:
+    def wettkampf_snapshot(self, bis_zug: int = None) -> Tuple[np.ndarray, List["TeilnehmerInfos"]]:
         if bis_zug is None or bis_zug < 0 or bis_zug > self.aktueller_zug:
-            teilnehmer_snapshots = [tn.snapshot for tn in self._teilnehmer]
-            return self._arena.snapshot, teilnehmer_snapshots
+            teilnehmer_infos = [TeilnehmerInfos(tn.snapshot, self._punkte_pro_teilnehmer[tn], self._zuege_pro_teilnehmer[tn]) for tn in self._teilnehmer]
+            return self._arena.snapshot, teilnehmer_infos
 
         anzahl_teilnehmer = len(self._teilnehmer)
+        punkte_pro_teilnehmer = {tn.nummer: 0 for tn in self.teilnehmer}
+        zuege_pro_teilnehmer = {tn.nummer: 0 for tn in self.teilnehmer}
         teilnehmer_snapshots = [zug.teilnehmer_snapshot for zug in self._aufzeichnung[:anzahl_teilnehmer]]
         arena_snapshot = np.full(self.arena_definition.form, -1)
         for zug_snapshot in self._aufzeichnung[anzahl_teilnehmer:anzahl_teilnehmer + bis_zug]:
-            teilnehmer_snapshots[zug_snapshot.teilnehmer_nummer] = zug_snapshot.teilnehmer_snapshot
+            teilnehmer_nummer = zug_snapshot.teilnehmer_nummer
+            teilnehmer_snapshots[teilnehmer_nummer] = zug_snapshot.teilnehmer_snapshot
+            zuege_pro_teilnehmer[teilnehmer_nummer] += 1
             if zug_snapshot.gab_punkt:
-                arena_snapshot[zug_snapshot.x, zug_snapshot.y] = zug_snapshot.teilnehmer_nummer
-        return arena_snapshot, teilnehmer_snapshots
+                arena_snapshot[zug_snapshot.x, zug_snapshot.y] = teilnehmer_nummer
+                punkte_pro_teilnehmer[teilnehmer_nummer] += 1
+        return arena_snapshot, [TeilnehmerInfos(tn, punkte_pro_teilnehmer[tn.nummer], zuege_pro_teilnehmer[tn.nummer]) for tn in teilnehmer_snapshots]
 
     @property
     def sieger(self) -> Optional["Teilnehmer"]:
@@ -158,6 +165,9 @@ class Wettkampf:
             return zustand
 
 
+# TODO Use dataclasses for Snapshots?
+
+
 class ZugSnapshot:
 
     def __init__(self, teilnehmer: "Teilnehmer", gab_punkt: bool):
@@ -187,6 +197,67 @@ class ZugSnapshot:
     @property
     def gab_punkt(self) -> bool:
         return self._gab_punkt
+
+
+class TeilnehmerInfos:
+
+    def __init__(self, teilnehmer_snapshot: "TeilnehmerSnapshot", punkte: int, zuege: int):
+        self._teilnehmer_snapshot = teilnehmer_snapshot
+        self._punkte = punkte
+        self._zuege = zuege
+
+    @property
+    def snapshot(self) -> "TeilnehmerSnapshot":
+        return self._teilnehmer_snapshot
+
+    @property
+    def nummer(self) -> int:
+        return self._teilnehmer_snapshot.nummer
+
+    @property
+    def richtung(self) -> Richtung:
+        return self._teilnehmer_snapshot.richtung
+
+    @property
+    def x(self) -> int:
+        return self._teilnehmer_snapshot.x
+
+    @property
+    def y(self) -> int:
+        return self._teilnehmer_snapshot.y
+
+    @property
+    def punkte(self) -> int:
+        return self._punkte
+
+    @property
+    def zuege(self) -> int:
+        return self._zuege
+
+
+class TeilnehmerSnapshot:
+
+    def __init__(self, nummer: int, x: int, y: int, richtung: Richtung):
+        self._nummer = nummer
+        self._richtung = richtung
+        self._x = x
+        self._y = y
+
+    @property
+    def nummer(self) -> int:
+        return self._nummer
+
+    @property
+    def richtung(self) -> Richtung:
+        return self._richtung
+
+    @property
+    def x(self) -> int:
+        return self._x
+
+    @property
+    def y(self) -> int:
+        return self._y
 
 
 class Teilnehmer:
@@ -234,7 +305,7 @@ class Teilnehmer:
         self._y = value
 
     @property
-    def snapshot(self) -> "TeilnehmerSnapshot":
+    def snapshot(self) -> TeilnehmerSnapshot:
         return TeilnehmerSnapshot(self.nummer, self.x, self.y, self.richtung)
 
     def start(self):
@@ -272,31 +343,6 @@ class Teilnehmer:
 
     def __str__(self):
         return "[{}] {}".format(self.nummer + 1, self.name)
-
-
-class TeilnehmerSnapshot:
-
-    def __init__(self, nummer: int, x: int, y: int, richtung: Richtung):
-        self._nummer = nummer
-        self._richtung = richtung
-        self._x = x
-        self._y = y
-
-    @property
-    def nummer(self) -> int:
-        return self._nummer
-
-    @property
-    def richtung(self) -> Richtung:
-        return self._richtung
-
-    @property
-    def x(self) -> int:
-        return self._x
-
-    @property
-    def y(self) -> int:
-        return self._y
 
 
 class GleichstandDummy(Teilnehmer):
