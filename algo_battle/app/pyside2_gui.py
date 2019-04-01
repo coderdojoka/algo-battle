@@ -113,6 +113,7 @@ class MainView(widgets.QMainWindow):
                 self._statistiken.anzahl_runden + 1
             )
             self._content_widget.setCurrentIndex(self._content_widget.indexOf(self._wettkampf_view))
+            self.window().resize(self.minimumSizeHint())
 
     def wettkampf_beendet(self):
         wettkampf = self._wettkampf_view.wettkampf
