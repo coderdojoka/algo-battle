@@ -1,7 +1,7 @@
 import algo_battle.util.input
-import algo_battle.algorithmen.einfach as einfache_algorithmen
 
 from typing import Iterable
+from algo_battle.util import builtin_algorithmen
 from algo_battle.domain.wettkampf import Wettkampf
 from algo_battle.domain.util import EventStatistiken
 from algo_battle.domain import ArenaDefinition
@@ -12,7 +12,7 @@ def run_cli(module: Iterable[str] = None):
     anzahl_runden = algo_battle.util.input.lese_zahl("Anzahl der Runden", 9)
     anzahl_teilnehmer = algo_battle.util.input.lese_zahl("Anzahl der Teilnehmer", 2)
 
-    fallback_algorithmen = algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen)
+    fallback_algorithmen = algo_battle.util.gib_algorithmen_in_modul(builtin_algorithmen)
     if module:
         for modul_pfad in module:
             fallback_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(modul_pfad))

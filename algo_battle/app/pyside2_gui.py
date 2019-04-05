@@ -5,11 +5,11 @@ import sys
 import random
 import numpy as np
 import algo_battle.util
-import algo_battle.algorithmen.einfach as einfache_algorithmen
 
 from typing import Optional, Iterable, Tuple, Type, Union, List
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
+from algo_battle.util import builtin_algorithmen
 from algo_battle.domain import ArenaDefinition
 from algo_battle.domain.algorithmus import Algorithmus
 from algo_battle.domain.wettkampf import Wettkampf, Gleichstand
@@ -47,7 +47,7 @@ def start_gui(module: Iterable[str] = None):
     if module:
         for modul_pfad in module:
             _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(modul_pfad))
-    _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(einfache_algorithmen))
+    _verfuegbare_algorithmen.extend(algo_battle.util.gib_algorithmen_in_modul(builtin_algorithmen))
 
     app = widgets.QApplication()
     font = app.font()

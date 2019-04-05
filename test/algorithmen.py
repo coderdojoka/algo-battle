@@ -3,7 +3,7 @@ import random
 
 from algo_battle.domain.algorithmus import Algorithmus
 from domain import FeldZustand, Richtung
-from algo_battle.algorithmen.einfach import Zufall
+from algo_battle.util.builtin_algorithmen import Zufall
 
 
 class Faultier(Zufall):
