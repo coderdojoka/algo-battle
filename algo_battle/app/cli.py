@@ -2,10 +2,11 @@ import algo_battle.util.input
 import algo_battle.algorithmen.einfach as einfache_algorithmen
 
 from typing import Iterable
-from algo_battle.framework.wettkampf import Wettkampf, ArenaDefinition, EventStatistiken
+from algo_battle.domain.wettkampf import Wettkampf
+from algo_battle.domain.util import EventStatistiken
+from algo_battle.domain import ArenaDefinition
 
 
-# TODO Default values and fallback algorithm module in config
 def run_cli(module: Iterable[str] = None):
     print("Algo-Battle")
     anzahl_runden = algo_battle.util.input.lese_zahl("Anzahl der Runden", 9)

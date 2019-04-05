@@ -10,8 +10,11 @@ import algo_battle.algorithmen.einfach as einfache_algorithmen
 from typing import Optional, Iterable, Tuple, Type, Union, List
 from PySide2 import QtWidgets as widgets, QtCore as core, QtGui as gui
 
-from algo_battle.framework.wettkampf import Teilnehmer, Wettkampf, ArenaDefinition, Gleichstand, EventStatistiken, TeilnehmerInfos
-from algo_battle.framework.algorithm import Algorithmus
+from algo_battle.domain import ArenaDefinition
+from algo_battle.domain.algorithmus import Algorithmus
+from algo_battle.domain.wettkampf import Wettkampf, Gleichstand
+from algo_battle.domain.teilnehmer import TeilnehmerInfos, Teilnehmer
+from algo_battle.domain.util import EventStatistiken
 
 
 _font_size = 12

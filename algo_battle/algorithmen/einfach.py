@@ -1,7 +1,7 @@
 import random
 
-from algo_battle.framework.algorithm import Algorithmus
-from algo_battle.framework.domain import FeldZustand, Richtung
+from algo_battle.domain.algorithmus import Algorithmus
+from algo_battle.domain import FeldZustand, Richtung
 
 
 class Zufall(Algorithmus):

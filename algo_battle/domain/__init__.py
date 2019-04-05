@@ -1,7 +1,6 @@
 import random
-
+from enum import unique, Enum
 from typing import Tuple, Union, Iterable
-from enum import Enum, unique
 
 
 @unique
