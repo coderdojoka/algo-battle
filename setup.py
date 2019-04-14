@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = "0.1.0a2"
+__version__ = "0.1.0a3"
 
 install_requires = [
     "numpy>=1.16.2",
