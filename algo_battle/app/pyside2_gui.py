@@ -92,14 +92,10 @@ class MainView(widgets.QMainWindow):
         self._algorithmen = []
         self._statistiken = EventStatistiken()
         self._wettkampf_view = WettkampfView(self)
-        self._neue_runde_button = widgets.QPushButton("Nächste Runde")
-        self._neue_runde_button.clicked.connect(self._neue_runde)
-        self._speicher_bild_button = widgets.QPushButton("Bild speichern")
-        self._speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
-        self._zeige_statistiken_button = widgets.QPushButton("Statistiken")
-        self._zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
-        self._neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
-        self._neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
+
+        self._wettkampf_beendet_controls = self._erzeuge_wettkampf_beendet_controls()
+        self._wettkampf_ergebnis_label = widgets.QLabel()
+        self._wettkampf_beendet_controls.layout().insertWidget(0, self._wettkampf_ergebnis_label)
 
         self._content_widget = widgets.QStackedWidget()
         self._content_widget.addWidget(self._erstelle_wettkampf)
@@ -109,6 +105,29 @@ class MainView(widgets.QMainWindow):
             self._status_bar.showMessage("Es konnten keine Algorithmen gefunden werden.")
         else:
             self.setCentralWidget(self._content_widget)
+
+    def _erzeuge_wettkampf_beendet_controls(self) -> widgets.QWidget:
+        wettkampf_beendet_controls = widgets.QWidget()
+        wettkampf_beendet_layout = widgets.QHBoxLayout()
+        wettkampf_beendet_layout.setContentsMargins(0, 0, 0, 0)
+        wettkampf_beendet_controls.setLayout(wettkampf_beendet_layout)
+
+        wettkampf_beendet_layout.addStretch(1)
+        _neue_runde_button = widgets.QPushButton("Nächste Runde")
+        _neue_runde_button.clicked.connect(self._neue_runde)
+        wettkampf_beendet_layout.addWidget(_neue_runde_button)
+        _speicher_bild_button = widgets.QPushButton("Bild speichern")
+        _speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
+        wettkampf_beendet_layout.addWidget(_speicher_bild_button)
+        _zeige_statistiken_button = widgets.QPushButton("Statistiken")
+        _zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
+        wettkampf_beendet_layout.addWidget(_zeige_statistiken_button)
+        wettkampf_beendet_layout.addStretch(1)
+        _neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
+        _neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
+        wettkampf_beendet_layout.addWidget(_neuer_wettkampf_button)
+
+        return wettkampf_beendet_controls
 
     def starte_wettkampf(self):
         if self._erstelle_wettkampf.is_valid:
@@ -133,17 +152,8 @@ class MainView(widgets.QMainWindow):
             ergebnis_nachricht = "Gleichstand! Es gibt keinen Gewinner."
         else:
             ergebnis_nachricht = "Teilnehmer {} gewinnt!".format(sieger)
-
-        ergebnis_label = widgets.QLabel(ergebnis_nachricht)
-        self.zeige_status_widget(ergebnis_label)
-        spacer_label1 = widgets.QLabel("")
-        self.zeige_status_widget(spacer_label1, stretch=1)
-        self.zeige_status_widget(self._neue_runde_button)
-        self.zeige_status_widget(self._speicher_bild_button)
-        self.zeige_status_widget(self._zeige_statistiken_button)
-        spacer_label2 = widgets.QLabel("")
-        self.zeige_status_widget(spacer_label2, stretch=1)
-        self.zeige_status_widget(self._neuer_wettkampf_button)
+        self._wettkampf_ergebnis_label.setText(ergebnis_nachricht)
+        self.zeige_status_widget(self._wettkampf_beendet_controls, stretch=1)
 
     def zeige_status_nachricht(self, nachricht: str):
         self._status_bar.showMessage(nachricht)
@@ -360,15 +370,6 @@ class ErstelleWettkampfView(widgets.QWidget):
         self._eingaben_geaendert()
 
     @staticmethod
-    def _erstelle_algorithmus_label(index: int) -> widgets.QWidget:
-        label = widgets.QWidget()
-        farbe_und_label_layout = widgets.QHBoxLayout()
-        label.setLayout(farbe_und_label_layout)
-        farbe_und_label_layout.addWidget(TeilnehmerFarbe(index))
-        farbe_und_label_layout.addWidget(widgets.QLabel("Teilnehmer {}".format(index + 1)))
-        return label
-
-    @staticmethod
     def _ersetelle_algorithmus_feld() -> widgets.QComboBox:
         algorithmus_feld = widgets.QComboBox()
         algorithmus_feld.setEditable(False)
@@ -484,6 +485,12 @@ class WettkampfView(widgets.QWidget):
         self._fortschritts_balken.setValue(self._aktueller_zug)
         elapsed_seconds = self._elapsed_timer.elapsed() / 1000
         self._aktueller_zug = min(int(elapsed_seconds * self._zuege_pro_sekunde), self._wettkampf.aktueller_zug)
+
+
+class WettkampfFortschrittControl(widgets.QWidget):
+
+    def __init__(self):
+        super().__init__()
 
 
 class TeilnehmerStatus(widgets.QGroupBox):
