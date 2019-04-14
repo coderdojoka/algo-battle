@@ -372,6 +372,7 @@ class WettkampfView(widgets.QWidget):
         self._wettkampf = None
         self._layout = widgets.QHBoxLayout()
         self.setLayout(self._layout)
+        self.setFocusPolicy(core.Qt.StrongFocus)
 
         self._timer = core.QTimer()
         self._timer.timeout.connect(self._aktualisiere_view)
@@ -433,6 +434,12 @@ class WettkampfView(widgets.QWidget):
         self._layout.addWidget(scroll_container)
         self._layout.addWidget(self._arena_view)
 
+    def keyReleaseEvent(self, event: gui.QKeyEvent):
+        if event.key() == core.Qt.Key_Space and self._timer.isActive():
+            self._fortschritt_control.toggl_play_pause()
+        else:
+            super().keyReleaseEvent(event)
+
     def _aktualisiere_view(self):
         arena_data, teilnehmer_infos = self._wettkampf.wettkampf_snapshot(bis_zug=self._fortschritt_control.aktueller_zug)
         teilnehmer_infos.sort(key=lambda tn: tn.punkte, reverse=True)
@@ -466,7 +473,7 @@ class WettkampfFortschrittControl(widgets.QWidget):
 
         self._play_pause_knopf = widgets.QPushButton()
         self._play_pause_knopf.setIcon(self.style().standardIcon(widgets.QStyle.SP_MediaPlay))
-        self._play_pause_knopf.clicked.connect(self._toggl_play_pause)
+        self._play_pause_knopf.clicked.connect(self.toggl_play_pause)
 
         self._geschwindigkeit_auswahl = widgets.QComboBox()
         self._geschwindigkeit_auswahl.setEditable(False)
@@ -523,7 +530,7 @@ class WettkampfFortschrittControl(widgets.QWidget):
         anzahl_ziffern = len(str(self._fortschritts_balken.maximum()))
         self._zug_label.setText("Zug {:>{breite}}/{}".format(self.aktueller_zug, self._fortschritts_balken.maximum(), breite=anzahl_ziffern))
 
-    def _toggl_play_pause(self):
+    def toggl_play_pause(self):
         if self._timer.isActive():
             self.pause()
         else:
