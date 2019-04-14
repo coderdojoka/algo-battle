@@ -56,8 +56,14 @@ def start_gui(module: Iterable[str] = None):
 
     main_view = MainView()
     main_view.setWindowTitle("Algo-Battle")
-    main_view.setGeometry(0, 0, _initial_width, _initial_height)
-    main_view.move(widgets.QApplication.desktop().rect().center() - main_view.rect().center())
+    main_view.setGeometry(
+        widgets.QStyle.alignedRect(
+            core.Qt.LeftToRight,
+            core.Qt.AlignCenter,
+            core.QSize(_initial_width, _initial_height),
+            app.desktop().availableGeometry()
+        )
+    )
     main_view.show()
     sys.exit(app.exec_())
 
@@ -384,6 +390,7 @@ class WettkampfView(widgets.QWidget):
         self._zuege_pro_sekunde = 1
         # TODO Change progress bar to timeline and controls (like a video player)?
         self._fortschritts_balken = widgets.QProgressBar()
+        self._fortschritts_balken.setFixedHeight(10)
         self._teilnehmer_status = []
         self._teilnehmer_layout = widgets.QVBoxLayout()
         self._arena_view = None
