@@ -494,7 +494,7 @@ class WettkampfFortschrittControl(widgets.QWidget):
         self._fortschritts_balken = ClickableProgressBar()
         self._fortschritts_balken.setFixedHeight(10)
         self._fortschritts_balken.setTextVisible(False)
-        self._fortschritts_balken.on_click(self._aktualisiere_label)
+        self._fortschritts_balken.on_click(self._on_fortschritt_clicked)
 
         self._fertig_knopf = widgets.QPushButton("Fertig")
         self._fertig_knopf.setDisabled(True)
@@ -529,6 +529,17 @@ class WettkampfFortschrittControl(widgets.QWidget):
     def _aktualisiere_label(self):
         anzahl_ziffern = len(str(self._fortschritts_balken.maximum()))
         self._zug_label.setText("Zug {:>{breite}}/{}".format(self.aktueller_zug, self._fortschritts_balken.maximum(), breite=anzahl_ziffern))
+
+    def _on_fortschritt_clicked(self, event: gui.QMouseEvent):
+        self._aktualisiere_label()
+        control_pressed = event.modifiers() & core.Qt.ControlModifier
+        alt_pressed = event.modifiers() & core.Qt.AltModifier
+        if control_pressed and alt_pressed:
+            self.toggl_play_pause()
+        elif control_pressed:
+            self.play()
+        elif alt_pressed:
+            self.pause()
 
     def toggl_play_pause(self):
         if self._timer.isActive():
@@ -570,7 +581,7 @@ class ClickableProgressBar(widgets.QProgressBar):
         progress = event.x() / self.width()
         self.setValue(int(progress * self.maximum()))
         if self._on_click:
-            self._on_click()
+            self._on_click(event)
 
     def on_click(self, handler):
         self._on_click = handler
