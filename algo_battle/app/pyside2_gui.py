@@ -112,20 +112,21 @@ class MainView(widgets.QMainWindow):
         wettkampf_beendet_layout.setContentsMargins(0, 0, 0, 0)
         wettkampf_beendet_controls.setLayout(wettkampf_beendet_layout)
 
+        speicher_bild_button = widgets.QPushButton("Bild speichern")
+        speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
+        zeige_statistiken_button = widgets.QPushButton("Statistiken")
+        zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
+        neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
+        neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
+        neue_runde_button = widgets.QPushButton("Nächste Runde")
+        neue_runde_button.clicked.connect(self._neue_runde)
+
         wettkampf_beendet_layout.addStretch(1)
-        _neue_runde_button = widgets.QPushButton("Nächste Runde")
-        _neue_runde_button.clicked.connect(self._neue_runde)
-        wettkampf_beendet_layout.addWidget(_neue_runde_button)
-        _speicher_bild_button = widgets.QPushButton("Bild speichern")
-        _speicher_bild_button.clicked.connect(self._speicher_wettkampf_bild)
-        wettkampf_beendet_layout.addWidget(_speicher_bild_button)
-        _zeige_statistiken_button = widgets.QPushButton("Statistiken")
-        _zeige_statistiken_button.clicked.connect(self._zeige_event_statistiken)
-        wettkampf_beendet_layout.addWidget(_zeige_statistiken_button)
+        wettkampf_beendet_layout.addWidget(speicher_bild_button)
+        wettkampf_beendet_layout.addWidget(zeige_statistiken_button)
         wettkampf_beendet_layout.addStretch(1)
-        _neuer_wettkampf_button = widgets.QPushButton("Neuer Wettkampf")
-        _neuer_wettkampf_button.clicked.connect(self._neuer_wettkampf)
-        wettkampf_beendet_layout.addWidget(_neuer_wettkampf_button)
+        wettkampf_beendet_layout.addWidget(neuer_wettkampf_button)
+        wettkampf_beendet_layout.addWidget(neue_runde_button)
 
         return wettkampf_beendet_controls
 
