@@ -19,3 +19,6 @@ pip3 install algo-battle
 python3 -m algo-battle GUI
 ```
 
+## Anleitung
+
+Eine ausführliche Anleitung zur Verwendung ist unter [anleitung](anleitung/) zu finden. 
