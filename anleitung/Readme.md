@@ -60,7 +60,7 @@ if __name__ == "__main__":
 ```
 
 Wirklich wichtig ist hierbei nur der Code innerhalb der Methode `_gib_richtung()`.
-Dieser Algorithmus tut nichts sonderlich schlaues, er fährt einfach immer nur nach rechts,
+Dieser Algorithmus tut nichts sonderlich Schlaues, er fährt einfach immer nur nach rechts,
 und bleibt am rechten Rand kleben...
 
 Starte das Programm indem du das Skript ausführst (Rechtsklick in die Datei und `Run 'Name der Datei'` auswählen).
@@ -179,7 +179,6 @@ class Zufall(Algorithmus):
 
 Dies ist nicht die beste Wahl, da ein guter Algorithmus möglichst viele neue Felder für sich beanspruchen soll, 
 aber der Zufallsalgorithmus oftmals auf das gleiche Feld fährt.
-
 
 Eine mögliche Optimierung ist es deshalb es zu verbieten in die genau gegenteilige Richtung zu fahren. 
 D.h. wurde der Algorithmus gerade nach links bewegt, darf er sich im nächsten Zug **nicht** nach rechts bewegen,

@@ -16,7 +16,7 @@ pip3 install algo-battle
 ## Starten
 
 ```bash
-python3 -m algo-battle GUI
+python3 -m algo_battle GUI
 ```
 
 ## Anleitung
