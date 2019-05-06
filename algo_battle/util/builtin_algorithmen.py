@@ -6,25 +6,37 @@ from algo_battle.domain import FeldZustand, Richtung
 
 class Zufall(Algorithmus):
 
-    _max_schritte = 50
+    def __init__(self):
+        super().__init__()
+
+    def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
+        # gehe bei jedem Zug in eine zufällige Richtung
+        return Richtung.zufall(ausser=[self.richtung.gegenteil])
+
+
+class ZufaelligeRichtung(Algorithmus):
 
     def __init__(self):
         super().__init__()
-        self._zaehler = 0
-        self._schritte = 0
+
+        # der Wert wird beim ersten Durchlauf bestimmt
+        self._schritte_in_gleiche_richtung = 0
 
     def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
-        if self._zaehler >= self._schritte or letzter_zustand.ist_blockiert:
-            self._zaehler = 0
-            self._schritte = random.randint(10, self._max_schritte)
+        # laufe Anzahl Schritte in die gleiche Richtung ODER ändere frühzeitig die Richtung falls das Feld blockiert ist
+        if self._schritte_in_gleiche_richtung <= 0 or letzter_zustand.ist_blockiert:
+            # zufällige Anzahl an Schritten wählen, die der Algorithmus in eine Richtung läuft
+            self._schritte_in_gleiche_richtung = random.randint(5, 50)
+
+            # eine neue zufällige Richtung auswählen, die NICHT die aktuelle Richtung ist!
             return Richtung.zufall(ausser=self.richtung)
 
-        self._zaehler += 1
+        # einen Schritt in die aktuelle Richtung machen
+        self._schritte_in_gleiche_richtung -= 1
         return self.richtung
 
 
-class WenigerZufall(Algorithmus):
-
+class WenigerZufaelligeRichtung(Algorithmus):
     _max_schritte = 50
 
     def __init__(self):
@@ -35,7 +47,7 @@ class WenigerZufall(Algorithmus):
     def _gib_richtung(self, letzter_zustand: FeldZustand, zug_nummer: int, aktuelle_punkte: int) -> Richtung:
         if self._zaehler >= self._schritte or letzter_zustand.ist_blockiert:
             self._zaehler = 0
-            self._schritte = random.randint(10, self._max_schritte)
+            self._schritte = random.randint(5, self._max_schritte)
             return Richtung.zufall(ausser=[self.richtung, self.richtung.gegenteil])
 
         self._zaehler += 1
