@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = "0.1.1.post1"
+__version__ = "0.1.1.post2"
 
 install_requires = [
     "numpy>=1.16.2",
@@ -28,7 +28,7 @@ setup(
     packages=find_packages(exclude=["test"]),
     zip_safe=False,
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Console",
         "Environment :: X11 Applications :: Qt",
         "Intended Audience :: Education",
