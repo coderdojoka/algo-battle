@@ -1,7 +1,7 @@
 # Algo Battle
 
 
-![Algo Battle](screenshot.png)
+![Algo Battle](https://raw.githubusercontent.com/coderdojoka/algo-battle/master/screenshot.png)
 
 ## Installation
 
@@ -21,4 +21,4 @@ python3 -m algo_battle GUI
 
 ## Anleitung
 
-Eine ausführliche Anleitung zur Verwendung ist unter [anleitung](anleitung/) zu finden. 
+Eine ausführliche Anleitung zur Verwendung ist unter [Anleitung](https://github.com/coderdojoka/algo-battle/tree/master/anleitung) zu finden. 

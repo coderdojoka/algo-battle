@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = "0.1.1"
+__version__ = "0.1.1.post1"
 
 install_requires = [
     "numpy>=1.16.2",
@@ -17,7 +17,7 @@ setup(
     version=__version__,
     author="CoderDojo Karlsruhe, Lennart Hensler and Mark Weinreuter",
     author_email="coderdojo.karlsruhe@gmail.com",
-    description="Educational Project to let different algorithms compete against each other. Currently only in German.",
+    description="Educational Project to let different algorithms compete against each other. Currently only available in German.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     project_urls={
